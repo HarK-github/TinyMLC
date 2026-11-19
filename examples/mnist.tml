@@ -1,0 +1,11 @@
+// MNIST handwritten digit classification: 784 -> 128 -> 64 -> 10
+model MNIST {
+    input: 784;
+    output: 10;
+    Dense(784, 128, "weights/dense1_w.npy", "weights/dense1_b.npy");
+    ReLU;
+    Dense(128, 64, "weights/dense2_w.npy", "weights/dense2_b.npy");
+    ReLU;
+    Dense(64, 10, "weights/dense3_w.npy", "weights/dense3_b.npy");
+    Softmax;
+}

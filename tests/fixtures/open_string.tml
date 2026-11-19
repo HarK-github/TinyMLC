@@ -1,0 +1,5 @@
+model OpenString {
+    input: 4;
+    output: 2;
+    Dense(4, 8, "weights/tiny_w1.npy);
+}

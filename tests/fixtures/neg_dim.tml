@@ -1,0 +1,5 @@
+model NegDim {
+    input: 4;
+    output: 2;
+    Dense(-4, 8, "w.npy", "b.npy");
+}

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import argparse
 import sys
-from typing import Sequence
+from collections.abc import Sequence
 
 from tmlc.errors import TmlcError
 
@@ -106,6 +106,7 @@ def dispatch_command(args: argparse.Namespace) -> int:
     """Dispatch the parsed CLI command to the appropriate compiler subsystem."""
     if args.command == "tokens":
         from tmlc.lexer.lexer import Lexer
+
         lexer = Lexer.from_file(args.file)
         tokens = lexer.tokenize()
         for token in tokens:
@@ -113,7 +114,9 @@ def dispatch_command(args: argparse.Namespace) -> int:
         return 0
 
     if args.command == "parse":
-        print(f"Parsing {args.file} (trace={args.trace}) - stage will be implemented in Day 2")
+        print(
+            f"Parsing {args.file} (trace={args.trace}) - stage will be implemented in Day 2"
+        )
         return 0
 
     if args.command == "tables":
@@ -125,11 +128,15 @@ def dispatch_command(args: argparse.Namespace) -> int:
         return 0
 
     if args.command == "semantic":
-        print(f"Running semantic analysis on {args.file} - stage will be implemented in Day 3")
+        print(
+            f"Running semantic analysis on {args.file} - stage will be implemented in Day 3"
+        )
         return 0
 
     if args.command == "ir":
-        print(f"Generating IR for {args.file} (opt={args.opt}) - stage will be implemented in Day 4")
+        print(
+            f"Generating IR for {args.file} (opt={args.opt}) - stage will be implemented in Day 4"
+        )
         return 0
 
     if args.command == "memory":
@@ -137,7 +144,9 @@ def dispatch_command(args: argparse.Namespace) -> int:
         return 0
 
     if args.command == "build":
-        print(f"Building {args.file} into {args.out_dir} - stage will be implemented in Day 5")
+        print(
+            f"Building {args.file} into {args.out_dir} - stage will be implemented in Day 5"
+        )
         return 0
 
     if args.command == "verify":

@@ -1,0 +1,8 @@
+// Tiny course example: 4 -> 8 -> 2
+model Tiny {
+    input: 4;
+    output: 2;
+    Dense(4, 8, "weights/tiny_w1.npy", "weights/tiny_b1.npy");
+    ReLU;
+    Dense(8, 2, "weights/tiny_w2.npy", "weights/tiny_b2.npy");
+}

@@ -167,13 +167,52 @@ def dispatch_command(args: argparse.Namespace) -> int:
         return 0
 
     if args.command == "ir":
-        print(
-            f"Generating IR for {args.file} (opt={args.opt}) - stage will be implemented in Day 4"
-        )
+        from tmlc.ir.builder import build_ir
+        from tmlc.loader.weights import WeightLoader
+        from tmlc.optimizer.fuse import fuse_dense_relu
+        from tmlc.parser.driver import ParserDriver
+        from tmlc.semantic.analyzer import SemanticAnalyzer
+
+        driver = ParserDriver()
+        ast = driver.parse_file(args.file)
+        analyzer = SemanticAnalyzer()
+        analyzer.analyze(ast)
+
+        base_dir = pathlib.Path(args.file).parent
+        loader = WeightLoader()
+        weights = loader.load_weights(ast, base_dir)
+
+        ir_prog = build_ir(ast, weights)
+        if args.opt:
+            ir_opt = fuse_dense_relu(ir_prog)
+            print(f"; Unoptimized IR : {len(ir_prog.ops)} ops")
+            print(f"; Optimized IR   : {len(ir_opt.ops)} ops (Dense+ReLU fused)")
+            print(ir_opt.format())
+        else:
+            print(ir_prog.format())
         return 0
 
     if args.command == "memory":
-        print(f"Memory report for {args.file} - stage will be implemented in Day 4")
+        from tmlc.ir.builder import build_ir
+        from tmlc.loader.weights import WeightLoader
+        from tmlc.optimizer.buffers import allocate_buffers
+        from tmlc.optimizer.fuse import fuse_dense_relu
+        from tmlc.parser.driver import ParserDriver
+        from tmlc.semantic.analyzer import SemanticAnalyzer
+
+        driver = ParserDriver()
+        ast = driver.parse_file(args.file)
+        analyzer = SemanticAnalyzer()
+        analyzer.analyze(ast)
+
+        base_dir = pathlib.Path(args.file).parent
+        loader = WeightLoader()
+        weights = loader.load_weights(ast, base_dir)
+
+        ir_prog = build_ir(ast, weights)
+        ir_opt = fuse_dense_relu(ir_prog)
+        _, report = allocate_buffers(ir_opt)
+        print(report.format())
         return 0
 
     if args.command == "build":

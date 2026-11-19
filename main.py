@@ -216,14 +216,41 @@ def dispatch_command(args: argparse.Namespace) -> int:
         return 0
 
     if args.command == "build":
-        print(
-            f"Building {args.file} into {args.out_dir} - stage will be implemented in Day 5"
-        )
+        from tmlc.backend.c99 import C99Backend
+        from tmlc.ir.builder import build_ir
+        from tmlc.loader.weights import WeightLoader
+        from tmlc.optimizer.buffers import allocate_buffers
+        from tmlc.optimizer.fuse import fuse_dense_relu
+        from tmlc.parser.driver import ParserDriver
+        from tmlc.semantic.analyzer import SemanticAnalyzer
+
+        driver = ParserDriver()
+        ast = driver.parse_file(args.file)
+        SemanticAnalyzer().analyze(ast)
+
+        base_dir = pathlib.Path(args.file).parent
+        loader = WeightLoader()
+        weights = loader.load_weights(ast, base_dir)
+
+        ir_prog = build_ir(ast, weights)
+        fused_prog = fuse_dense_relu(ir_prog)
+        allocated_prog, report = allocate_buffers(fused_prog)
+
+        backend = C99Backend()
+        c_path, h_path = backend.generate(allocated_prog, report, out_dir=args.out_dir)
+        print(f"Generated standalone C99 model for '{ast.name}':")
+        print(f"  Header : {h_path}")
+        print(f"  Source : {c_path} ({c_path.stat().st_size:,} bytes)")
         return 0
 
     if args.command == "verify":
-        print(f"Verifying {args.file} - stage will be implemented in Day 5")
-        return 0
+        from tmlc.verifier.verify import ModelVerifier
+
+        verifier = ModelVerifier()
+        _, passed = verifier.verify_model(args.file)
+        if passed:
+            return 0
+        return 1
 
     return 0
 

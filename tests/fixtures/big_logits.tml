@@ -1,0 +1,7 @@
+// Test 17: Softmax with large logits (+-1000)
+model BigLogits {
+    input: 2;
+    output: 2;
+    Dense(2, 2, "big_w.npy", "big_b.npy");
+    Softmax;
+}

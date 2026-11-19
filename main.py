@@ -114,17 +114,33 @@ def dispatch_command(args: argparse.Namespace) -> int:
         return 0
 
     if args.command == "parse":
-        print(
-            f"Parsing {args.file} (trace={args.trace}) - stage will be implemented in Day 2"
-        )
+        from tmlc.parser.driver import ParserDriver
+
+        driver = ParserDriver()
+        if args.trace:
+            driver.parse_file(args.file, trace_callback=print)
+        else:
+            driver.parse_file(args.file)
+        print(f"Successfully parsed {args.file}")
         return 0
 
     if args.command == "tables":
-        print("Displaying LR tables - stage will be implemented in Day 2")
+        from tmlc.parser.grammar import get_tmlc_grammar
+        from tmlc.parser.lr0 import build_slr1_table
+        from tmlc.parser.tables_print import format_slr1_table
+
+        grammar = get_tmlc_grammar()
+        table = build_slr1_table(grammar)
+        print(format_slr1_table(table))
         return 0
 
     if args.command == "ast":
-        print(f"Generating AST for {args.file} - stage will be implemented in Day 2")
+        from tmlc.ast.nodes import format_ast
+        from tmlc.parser.driver import ParserDriver
+
+        driver = ParserDriver()
+        ast = driver.parse_file(args.file)
+        print(format_ast(ast))
         return 0
 
     if args.command == "semantic":

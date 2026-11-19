@@ -1,0 +1,7 @@
+// Extra tokens after closing brace
+model Trailing {
+    input: 4;
+    output: 2;
+    Dense(4, 8, "weights/w.npy", "weights/b.npy");
+}
+extra_token;

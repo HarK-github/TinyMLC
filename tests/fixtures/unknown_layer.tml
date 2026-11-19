@@ -1,0 +1,6 @@
+// Unknown layer name
+model UnknownLayer {
+    input: 4;
+    output: 2;
+    Conv2D(4, 8, "w.npy", "b.npy");
+}

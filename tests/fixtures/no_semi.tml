@@ -1,0 +1,6 @@
+// Missing semicolon after input declaration
+model NoSemi {
+    input: 4
+    output: 2;
+    Dense(4, 8, "weights/w.npy", "weights/b.npy");
+}

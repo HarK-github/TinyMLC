@@ -1,0 +1,5 @@
+// Missing output declaration
+model NoOutput {
+    input: 4;
+    Dense(4, 8, "weights/w.npy", "weights/b.npy");
+}

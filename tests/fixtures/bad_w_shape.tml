@@ -1,0 +1,6 @@
+// Wrong weight shape
+model BadWShape {
+    input: 4;
+    output: 2;
+    Dense(4, 2, "bad_w_shape.npy", "valid_b.npy");
+}

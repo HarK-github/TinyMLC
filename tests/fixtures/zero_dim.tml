@@ -1,0 +1,6 @@
+// Zero dimension in Dense layer
+model ZeroDim {
+    input: 4;
+    output: 8;
+    Dense(0, 8, "weights/w.npy", "weights/b.npy");
+}

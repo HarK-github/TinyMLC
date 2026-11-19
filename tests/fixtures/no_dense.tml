@@ -1,0 +1,6 @@
+// Model with no Dense layer
+model NoDense {
+    input: 4;
+    output: 4;
+    ReLU;
+}

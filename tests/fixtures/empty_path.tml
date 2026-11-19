@@ -1,0 +1,6 @@
+// Empty weight path string
+model EmptyPath {
+    input: 4;
+    output: 2;
+    Dense(4, 2, "", "b.npy");
+}

@@ -1,0 +1,6 @@
+// Weights containing NaN
+model NanW {
+    input: 4;
+    output: 2;
+    Dense(4, 2, "nan_w.npy", "valid_b.npy");
+}

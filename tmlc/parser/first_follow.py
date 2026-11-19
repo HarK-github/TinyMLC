@@ -103,7 +103,9 @@ def compute_follow(
                         follow[sym].update(add_first)
                         changed = True
 
-                    if ("ε" in beta_first or not beta) and not follow[head].issubset(follow[sym]):
+                    if ("ε" in beta_first or not beta) and not follow[head].issubset(
+                        follow[sym]
+                    ):
                         follow[sym].update(follow[head])
                         changed = True
 

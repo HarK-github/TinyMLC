@@ -1,0 +1,8 @@
+// Layer dimension mismatch between layers
+model Mismatch {
+    input: 784;
+    output: 10;
+    Dense(784, 128, "w1.npy", "b1.npy");
+    ReLU;
+    Dense(64, 10, "w2.npy", "b2.npy");
+}

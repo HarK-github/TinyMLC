@@ -1,0 +1,8 @@
+// Last Dense output differs from output declaration
+model BadOutput {
+    input: 784;
+    output: 10;
+    Dense(784, 128, "w1.npy", "b1.npy");
+    ReLU;
+    Dense(128, 64, "w2.npy", "b2.npy");
+}

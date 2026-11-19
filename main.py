@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import pathlib
 import sys
 from collections.abc import Sequence
 
@@ -144,8 +145,24 @@ def dispatch_command(args: argparse.Namespace) -> int:
         return 0
 
     if args.command == "semantic":
+        from tmlc.loader.weights import WeightLoader
+        from tmlc.parser.driver import ParserDriver
+        from tmlc.semantic.analyzer import SemanticAnalyzer
+
+        driver = ParserDriver()
+        ast = driver.parse_file(args.file)
+
+        analyzer = SemanticAnalyzer()
+        analyzer.analyze(ast)
+
+        base_dir = pathlib.Path(args.file).parent
+        loader = WeightLoader()
+        loaded_weights = loader.load_weights(ast, base_dir)
+
         print(
-            f"Running semantic analysis on {args.file} - stage will be implemented in Day 3"
+            f"Semantic and weight checks passed for {args.file}: "
+            f"Model '{ast.name}' (in={ast.input_decl.dim}, out={ast.output_decl.dim}, "
+            f"{len(loaded_weights)} Dense layers verified)"
         )
         return 0
 

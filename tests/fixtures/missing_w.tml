@@ -1,0 +1,6 @@
+// Missing weight file
+model MissingW {
+    input: 4;
+    output: 2;
+    Dense(4, 2, "non_existent_weight_file.npy", "b.npy");
+}

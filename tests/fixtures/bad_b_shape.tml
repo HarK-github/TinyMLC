@@ -1,0 +1,6 @@
+// Wrong bias shape
+model BadBShape {
+    input: 4;
+    output: 2;
+    Dense(4, 2, "valid_w.npy", "bad_b_shape.npy");
+}

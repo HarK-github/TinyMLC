@@ -63,6 +63,15 @@ pip install -r requirements.txt
    python main.py verify examples/mnist.tml
    ```
 
+## Latency Benchmark
+
+To benchmark inference latency on the compiled C99 model using GCC with `-O2` optimization:
+
+```bash
+gcc -std=c99 -O2 -I generated tools/benchmark.c generated/model.c -o benchmark.exe -lm
+./benchmark.exe
+```
+
 ## Diagnostic Error Codes
 
 | Code | Stage | Description |

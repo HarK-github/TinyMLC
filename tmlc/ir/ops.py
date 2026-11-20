@@ -40,6 +40,8 @@ class IROp:
     bias: np.ndarray | None = None
     input_buf: str = ""
     output_buf: str = ""
+    quantized_weights: np.ndarray | None = None
+    scale: float | None = None
 
     def format(self, op_index: int) -> str:
         """Format op as an SSA-like instruction string."""
@@ -48,18 +50,23 @@ class IROp:
             if self.input_buf and self.output_buf
             else ""
         )
+        quant_info = (
+            f" [scale={self.scale:.9g}][int8]"
+            if self.scale is not None
+            else ""
+        )
         if self.kind == OpKind.INPUT:
             return f"%{op_index} = INPUT(dim={self.out_dim}){buf_info}"
         if self.kind == OpKind.OUTPUT:
             return f"%{op_index} = OUTPUT(dim={self.in_dim}){buf_info}"
         if self.kind == OpKind.DENSE:
-            return f"%{op_index} = DENSE({self.in_dim} -> {self.out_dim}){buf_info}"
+            return f"%{op_index} = DENSE({self.in_dim} -> {self.out_dim}){quant_info}{buf_info}"
         if self.kind == OpKind.RELU:
             return f"%{op_index} = RELU(dim={self.in_dim}){buf_info}"
         if self.kind == OpKind.SOFTMAX:
             return f"%{op_index} = SOFTMAX(dim={self.in_dim}){buf_info}"
         if self.kind == OpKind.DENSE_RELU:
             return (
-                f"%{op_index} = DENSE_RELU({self.in_dim} -> {self.out_dim}){buf_info}"
+                f"%{op_index} = DENSE_RELU({self.in_dim} -> {self.out_dim}){quant_info}{buf_info}"
             )
-        return f"%{op_index} = {self.kind.value}({self.in_dim} -> {self.out_dim}){buf_info}"
+        return f"%{op_index} = {self.kind.value}({self.in_dim} -> {self.out_dim}){quant_info}{buf_info}"

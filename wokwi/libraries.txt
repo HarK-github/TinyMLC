@@ -1,0 +1,2 @@
+# No external runtime libraries required.
+# TMLC compiles standalone ANSI C99 model code with zero external runtime dependencies.

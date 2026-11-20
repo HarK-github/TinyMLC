@@ -53,6 +53,7 @@ def allocate_buffers(program: IRProgram) -> tuple[IRProgram, MemoryReport]:
     layer_details: list[str] = []
 
     total_params = 0
+    total_flash_weight_bytes = 0
     buf_a_needed = 0
     buf_b_needed = 0
 
@@ -74,10 +75,18 @@ def allocate_buffers(program: IRProgram) -> tuple[IRProgram, MemoryReport]:
             next_buf = "buf_a"
 
         elif op.kind in (OpKind.DENSE, OpKind.DENSE_RELU):
-            w_params = (op.in_dim * op.out_dim) if op.weights is not None else 0
+            w_params = (op.in_dim * op.out_dim) if (op.weights is not None or op.quantized_weights is not None) else 0
             b_params = op.out_dim if op.bias is not None else 0
             layer_params = w_params + b_params
             total_params += layer_params
+
+            if op.quantized_weights is not None:
+                layer_weight_bytes = (w_params * 1) + (b_params * 4) + 4
+                tag = f" [int8]: {layer_params:,} params ({layer_weight_bytes:,} B)"
+            else:
+                layer_weight_bytes = layer_params * 4
+                tag = f": {layer_params:,} params ({layer_weight_bytes:,} B)"
+            total_flash_weight_bytes += layer_weight_bytes
 
             dst_buf = next_buf
             if dst_buf == "buf_a":
@@ -95,12 +104,14 @@ def allocate_buffers(program: IRProgram) -> tuple[IRProgram, MemoryReport]:
                 bias=op.bias,
                 input_buf=current_src,
                 output_buf=dst_buf,
+                quantized_weights=op.quantized_weights,
+                scale=op.scale,
             )
             new_ops.append(assigned_op)
             current_src = dst_buf
             layer_details.append(
-                f"{op.kind.value}({op.in_dim} -> {op.out_dim}): "
-                f"{layer_params:,} params ({layer_params * 4:,} B) [{assigned_op.input_buf} -> {assigned_op.output_buf}]"
+                f"{op.kind.value}({op.in_dim} -> {op.out_dim})"
+                f"{tag} [{assigned_op.input_buf} -> {assigned_op.output_buf}]"
             )
 
         elif op.kind in (OpKind.RELU, OpKind.SOFTMAX):
@@ -127,7 +138,7 @@ def allocate_buffers(program: IRProgram) -> tuple[IRProgram, MemoryReport]:
             )
             new_ops.append(assigned_op)
 
-    flash_weight_bytes = total_params * 4
+    flash_weight_bytes = total_flash_weight_bytes
     buf_a_bytes = buf_a_needed * 4
     buf_b_bytes = buf_b_needed * 4
     total_ram_bytes = buf_a_bytes + buf_b_bytes

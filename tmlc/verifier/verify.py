@@ -27,11 +27,16 @@ class ModelVerifier:
         self,
         tml_path: str | pathlib.Path,
         input_vector: np.ndarray,
+        quantize: str | None = None,
     ) -> np.ndarray:
         """Independent NumPy reference inference engine.
 
         Loads weights directly from disk without touching backend code or IR buffers.
+        If quantize == 'int8', weights are dequantized identically to generated C.
         """
+        if quantize is not None and quantize != "int8":
+            raise TmlcError("E501", f"Unsupported quantization mode: {quantize}")
+
         p = pathlib.Path(tml_path)
         base_dir = p.parent
         ast = ParserDriver().parse_file(p)
@@ -48,8 +53,16 @@ class ModelVerifier:
                 w = np.load(w_file).astype(np.float32)
                 b = np.load(b_file).astype(np.float32).flatten()
 
+                if quantize == "int8":
+                    from tmlc.quantization.int8 import dequantize_weights, quantize_weights
+
+                    w_q, scale = quantize_weights(w)
+                    w_eff = dequantize_weights(w_q, scale)
+                else:
+                    w_eff = w
+
                 # Dot product matching C loop order: out[i] = sum(in[j] * w[j, i]) + b[i]
-                curr = curr @ w + b
+                curr = curr @ w_eff + b
 
             elif isinstance(layer, ActivationNode):
                 if layer.op == "ReLU":
@@ -152,7 +165,8 @@ int main(void) {{
         self,
         tml_path: str | pathlib.Path,
         input_vectors: Sequence[np.ndarray] | None = None,
-        out_dir: str | pathlib.Path = "generated",
+        out_dir: str | pathlib.Path | None = None,
+        quantize: str | None = None,
     ) -> tuple[float, bool]:
         """Perform full end-to-end compilation and numerical verification.
 
@@ -161,9 +175,16 @@ int main(void) {{
         Raises:
             TmlcError: E601 if numerical output differs, E602 if gcc fails.
         """
+        if quantize is not None and quantize != "int8":
+            raise TmlcError("E501", f"Unsupported quantization mode: {quantize}")
+
         p = pathlib.Path(tml_path)
         base_dir = p.parent
-        dest = pathlib.Path(out_dir)
+
+        if out_dir is None:
+            dest = pathlib.Path("generated_int8" if quantize == "int8" else "generated")
+        else:
+            dest = pathlib.Path(out_dir)
 
         # 1. Compile pipeline to generate C
         driver = ParserDriver()
@@ -173,6 +194,12 @@ int main(void) {{
         weights = WeightLoader().load_weights(ast, base_dir)
         ir_prog = build_ir(ast, weights)
         fused_prog = fuse_dense_relu(ir_prog)
+
+        if quantize == "int8":
+            from tmlc.quantization.int8 import quantize_ir
+
+            fused_prog = quantize_ir(fused_prog)
+
         allocated_prog, report = allocate_buffers(fused_prog)
 
         backend = C99Backend()
@@ -214,7 +241,7 @@ int main(void) {{
                 out_dir=dest,
             )
 
-            np_out = self.numpy_reference_predict(p, vec)
+            np_out = self.numpy_reference_predict(p, vec, quantize=quantize)
 
             diff = np.abs(c_out - np_out)
             vec_max_err = float(np.max(diff))

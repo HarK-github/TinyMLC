@@ -6,3 +6,4 @@ __pycache__/
 *.exe
 *.out
 generated/
+generated_int8/

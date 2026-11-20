@@ -53,15 +53,36 @@ pip install -r requirements.txt
    python main.py memory examples/mnist.tml
    ```
 
-8. **Build Standalone C99 Source and Header**:
+8. **Build Standalone C99 Source and Header (Float32)**:
    ```bash
-   python main.py build examples/mnist.tml
+   python main.py generate examples/mnist.tml --out generated/
    ```
 
-9. **Verify Numerical Output Against NumPy Reference**:
+9. **Verify Numerical Output Against NumPy Reference (Float32)**:
    ```bash
    python main.py verify examples/mnist.tml
    ```
+
+10. **Optional: Symmetric Int8 Weight-Only Quantization**:
+    ```bash
+    # Generate int8 model into generated_int8/
+    python main.py generate examples/mnist.tml --quantize int8 --out generated_int8/
+
+    # Verify int8 model against dequantized NumPy reference
+    python main.py verify examples/mnist.tml --quantize int8
+
+    # View memory savings (3.98x flash compression on MNIST)
+    python main.py memory examples/mnist.tml --quantize int8
+    ```
+    See [docs/quantization.md](docs/quantization.md) and [results/int8_results.md](results/int8_results.md) for full benchmarks and theoretical derivation.
+
+## ESP32-S3 Wokwi Simulation
+
+Simulation files targeting the **ESP32-S3** microcontroller (`board-esp32-s3-devkitc-1`) are prepared in `wokwi/` (files are prepared for simulation, not simulated; `model.c` was compiled on PC with GCC):
+- Embeds the generated Tiny int8 model (`wokwi/model.c`, `wokwi/model.h`).
+- Interactive Serial Monitor input with input length validation.
+- Real-time latency measurement in microseconds via `micros()`.
+- See [wokwi/README.md](wokwi/README.md) for step-by-step instructions.
 
 ## Latency Benchmark
 

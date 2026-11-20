@@ -79,6 +79,11 @@ def create_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Apply IR optimizations (Dense+ReLU fusion)",
     )
+    ir_parser.add_argument(
+        "--quantize",
+        default=None,
+        help="Optional weight quantization mode (e.g. int8)",
+    )
 
     # 7. memory
     memory_parser = subparsers.add_parser(
@@ -86,17 +91,30 @@ def create_parser() -> argparse.ArgumentParser:
         help="Generate static memory footprint and buffer allocation report",
     )
     memory_parser.add_argument("file", help="Path to .tml model file")
+    memory_parser.add_argument(
+        "--quantize",
+        default=None,
+        help="Optional weight quantization mode (e.g. int8)",
+    )
 
-    # 8. build
+    # 8. build (and generate)
     build_parser = subparsers.add_parser(
         "build",
+        aliases=["generate"],
         help="Compile .tml model and generate standalone C99 model.c and model.h",
     )
     build_parser.add_argument("file", help="Path to .tml model file")
     build_parser.add_argument(
+        "--out",
         "--out-dir",
-        default="generated",
-        help="Output directory for generated C files (default: generated)",
+        dest="out_dir",
+        default=None,
+        help="Output directory for generated C files (default: generated or generated_int8)",
+    )
+    build_parser.add_argument(
+        "--quantize",
+        default=None,
+        help="Optional weight quantization mode (e.g. int8)",
     )
 
     # 9. verify
@@ -105,6 +123,18 @@ def create_parser() -> argparse.ArgumentParser:
         help="Compile generated C with GCC and verify against NumPy reference",
     )
     verify_parser.add_argument("file", help="Path to .tml model file")
+    verify_parser.add_argument(
+        "--out",
+        "--out-dir",
+        dest="out_dir",
+        default=None,
+        help="Output directory for generated C files (default: generated or generated_int8)",
+    )
+    verify_parser.add_argument(
+        "--quantize",
+        default=None,
+        help="Optional weight quantization mode (e.g. int8)",
+    )
 
     return parser
 
@@ -179,6 +209,9 @@ def dispatch_command(args: argparse.Namespace) -> int:
         from tmlc.parser.driver import ParserDriver
         from tmlc.semantic.analyzer import SemanticAnalyzer
 
+        if args.quantize is not None and args.quantize != "int8":
+            raise TmlcError("E501", f"Unsupported quantization mode: '{args.quantize}'. Supported: int8")
+
         driver = ParserDriver()
         ast = driver.parse_file(args.file)
         analyzer = SemanticAnalyzer()
@@ -191,10 +224,18 @@ def dispatch_command(args: argparse.Namespace) -> int:
         ir_prog = build_ir(ast, weights)
         if args.opt:
             ir_opt = fuse_dense_relu(ir_prog)
+            if args.quantize == "int8":
+                from tmlc.quantization.int8 import quantize_ir
+
+                ir_opt = quantize_ir(ir_opt)
             print(f"; Unoptimized IR : {len(ir_prog.ops)} ops")
             print(f"; Optimized IR   : {len(ir_opt.ops)} ops (Dense+ReLU fused)")
             print(ir_opt.format())
         else:
+            if args.quantize == "int8":
+                from tmlc.quantization.int8 import quantize_ir
+
+                ir_prog = quantize_ir(ir_prog)
             print(ir_prog.format())
         return 0
 
@@ -205,6 +246,9 @@ def dispatch_command(args: argparse.Namespace) -> int:
         from tmlc.optimizer.fuse import fuse_dense_relu
         from tmlc.parser.driver import ParserDriver
         from tmlc.semantic.analyzer import SemanticAnalyzer
+
+        if args.quantize is not None and args.quantize != "int8":
+            raise TmlcError("E501", f"Unsupported quantization mode: '{args.quantize}'. Supported: int8")
 
         driver = ParserDriver()
         ast = driver.parse_file(args.file)
@@ -217,11 +261,15 @@ def dispatch_command(args: argparse.Namespace) -> int:
 
         ir_prog = build_ir(ast, weights)
         ir_opt = fuse_dense_relu(ir_prog)
+        if args.quantize == "int8":
+            from tmlc.quantization.int8 import quantize_ir
+
+            ir_opt = quantize_ir(ir_opt)
         _, report = allocate_buffers(ir_opt)
         print(report.format())
         return 0
 
-    if args.command == "build":
+    if args.command in ("build", "generate"):
         from tmlc.backend.c99 import C99Backend
         from tmlc.ir.builder import build_ir
         from tmlc.loader.weights import WeightLoader
@@ -229,6 +277,15 @@ def dispatch_command(args: argparse.Namespace) -> int:
         from tmlc.optimizer.fuse import fuse_dense_relu
         from tmlc.parser.driver import ParserDriver
         from tmlc.semantic.analyzer import SemanticAnalyzer
+
+        if args.quantize is not None and args.quantize != "int8":
+            raise TmlcError("E501", f"Unsupported quantization mode: '{args.quantize}'. Supported: int8")
+
+        out_dir = (
+            args.out_dir
+            if args.out_dir is not None
+            else ("generated_int8" if args.quantize == "int8" else "generated")
+        )
 
         driver = ParserDriver()
         ast = driver.parse_file(args.file)
@@ -240,11 +297,16 @@ def dispatch_command(args: argparse.Namespace) -> int:
 
         ir_prog = build_ir(ast, weights)
         fused_prog = fuse_dense_relu(ir_prog)
+        if args.quantize == "int8":
+            from tmlc.quantization.int8 import quantize_ir
+
+            fused_prog = quantize_ir(fused_prog)
         allocated_prog, report = allocate_buffers(fused_prog)
 
         backend = C99Backend()
-        c_path, h_path = backend.generate(allocated_prog, report, out_dir=args.out_dir)
-        print(f"Generated standalone C99 model for '{ast.name}':")
+        c_path, h_path = backend.generate(allocated_prog, report, out_dir=out_dir)
+        mode_str = " (int8 quantized)" if args.quantize == "int8" else ""
+        print(f"Generated standalone C99 model for '{ast.name}'{mode_str}:")
         print(f"  Header : {h_path}")
         print(f"  Source : {c_path} ({c_path.stat().st_size:,} bytes)")
         return 0
@@ -252,8 +314,21 @@ def dispatch_command(args: argparse.Namespace) -> int:
     if args.command == "verify":
         from tmlc.verifier.verify import ModelVerifier
 
+        if args.quantize is not None and args.quantize != "int8":
+            raise TmlcError("E501", f"Unsupported quantization mode: '{args.quantize}'. Supported: int8")
+
+        out_dir = (
+            args.out_dir
+            if args.out_dir is not None
+            else ("generated_int8" if args.quantize == "int8" else "generated")
+        )
+
         verifier = ModelVerifier()
-        _, passed = verifier.verify_model(args.file)
+        _, passed = verifier.verify_model(
+            args.file,
+            out_dir=out_dir,
+            quantize=args.quantize,
+        )
         if passed:
             return 0
         return 1

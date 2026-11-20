@@ -96,7 +96,7 @@ Deploying deep neural networks onto bare-metal microcontrollers (TinyML) is seve
 
 In this student project, we present the design, theoretical foundations, implementation, and empirical verification of the \textbf{TinyML Model-to-C Compiler (TMLC)}. TMLC translates neural networks specified in a declarative domain-specific language (\texttt{.tml}) and trained parameters in NumPy format (\texttt{.npy}) directly into pure, self-contained, human-readable ANSI C99 source code. The language is governed by a formal SLR(1) context-free grammar with 37 states and provably 0 shift/reduce and 0 reduce/reduce conflicts. TMLC incorporates multi-pass semantic checking with complete IEEE 754 float sanitation, algebraic intermediate representation (IR) operator fusion combining Dense linear transformations with non-linear ReLU activations, and a bipartite static ping-pong buffer allocator that provably eliminates all runtime dynamic memory allocation (\texttt{malloc}).
 
-We evaluate TMLC on the standard 109,386-parameter MNIST deep neural network (784 $\rightarrow$ 128 $\rightarrow$ 64 $\rightarrow$ 10). TMLC restricts total peak working SRAM to just \textbf{768 Bytes} (a 62\% reduction over naive allocation) and Flash storage to 437.54~KB. Compiled with GCC \texttt{-O2}, the model achieves an average inference latency of \textbf{195.65 $\mu$s} ($>5,111$ inferences/second) with an empirical numerical discrepancy against an independent decoupled double-precision NumPy reference of just $7.92 \times 10^{-9}$ (over 1,200 times smaller than the $10^{-5}$ threshold). Compiler correctness is validated across 40 passing test fixtures, end-to-end subprocess CLI negative testing, and deliberate mutation fault injection with 100\% mutation detection.
+We evaluate TMLC on the standard 109,386-parameter MNIST deep neural network (784 $\rightarrow$ 128 $\rightarrow$ 64 $\rightarrow$ 10). TMLC restricts total peak working SRAM to just \textbf{768 Bytes} (a 62\% reduction over naive allocation) and Flash storage to 437.54~KB. Compiled with GCC \texttt{-O2}, the model achieves an average inference latency of \textbf{195.65 $\mu$s} ($>5,111$ inferences/second) with an empirical numerical discrepancy against an independent decoupled double-precision NumPy reference of just $7.92 \times 10^{-9}$ (over 1,200 times smaller than the $10^{-5}$ threshold). Compiler correctness is verified across 40 passing test fixtures, end-to-end subprocess CLI negative testing, and deliberate mutation fault injection with 100\% mutation detection.
 \end{abstract}
 
 \vspace{0.5em}
@@ -137,7 +137,7 @@ The rapid proliferation of edge computing has catalyzed an urgent demand for dep
 
 However, microcontrollers (MCUs) represent one of the most hostile computing environments for traditional deep learning frameworks. The fundamental constraints of embedded hardware dictate strict engineering boundaries:
 \begin{enumerate}[leftmargin=*]
-    \item \textbf{Severe Memory Scarcity:} While modern desktop and server GPUs boast tens of gigabytes of high-bandwidth memory, embedded microcontrollers typically feature static RAM (SRAM) capacities measured in tens to hundreds of kilobytes (e.g., 32~KB to 512~KB on ARM Cortex-M4 or ESP32 architectures) and non-volatile Flash storage (ROM) between 128~KB and 2~MB.
+    \item \textbf{Severe Memory Scarcity:} While modern desktop and server GPUs boast tens of gigabytes of high-throughput memory, embedded microcontrollers typically feature static RAM (SRAM) capacities measured in tens to hundreds of kilobytes (e.g., 32~KB to 512~KB on ARM Cortex-M4 or ESP32 architectures) and non-volatile Flash storage (ROM) between 128~KB and 2~MB.
     \item \textbf{Harvard Memory Architecture:} Unlike unified Von Neumann desktop systems, many embedded microcontrollers enforce a physical and architectural segregation between code memory (Flash) and working data memory (SRAM). Weights and immutable constants must reside in Flash to avoid exhausting precious SRAM.
     \item \textbf{Absence of Operating Systems and Dynamic Memory Hazards:} Safety-critical and bare-metal embedded applications run without virtual memory, paging, or memory protection units (MPU). Dynamic heap allocation via standard C runtime routines (\texttt{malloc}, \texttt{calloc}, \texttt{free}) introduces non-deterministic execution times, heap fragmentation, memory leaks, and unpredictable allocation failures that can crash unattended systems.
     \item \textbf{Strict Real-Time Latency Deadlines:} Applications such as anomaly detection in rotational machinery or keyword spotting require deterministic, single-pass inference latency without background garbage collection or runtime initialization pauses.
@@ -519,7 +519,7 @@ Following semantic validation, TMLC lowers the Abstract Syntax Tree into a low-l
 In desktop deep learning compilers, computational graphs are modeled as complex Directed Acyclic Graphs (DAGs) or Static Single Assignment (SSA) functional forms. For microcontroller feed-forward neural networks, however, computational flow is strictly sequential. TMLC therefore adopts a \textbf{Linear Operational IR} consisting of typed operational instructions: \texttt{INPUT}, \texttt{DENSE}, \texttt{RELU}, \texttt{SOFTMAX}, \texttt{DENSE\_RELU}, and \texttt{OUTPUT}.
 
 \subsection{Dense+ReLU Operator Fusion}
-On microcontroller architectures, memory bandwidth is severely restricted. Every round-trip to internal SRAM incurs bus arbitration delays, memory controller access latency, and energy dissipation.
+On microcontroller architectures, memory throughput is severely restricted. Every round-trip to internal SRAM incurs bus arbitration delays, memory controller access latency, and energy dissipation.
 
 In an unoptimized execution pipeline, computing a Dense layer followed by a ReLU activation requires two distinct passes:
 \begin{enumerate}
@@ -860,6 +860,29 @@ Under default \texttt{-O2} optimization, total inference latency is \textbf{195.
 \begin{itemize}
     \item \textbf{ARM Cortex-M4 @ 168 MHz (STM32F407):} With $109,184$ multiply-accumulate (MAC) operations executing at 168~MHz, projected inference latency is $\approx 0.81$~ms ($>1,200$ classifications per second).
     \item \textbf{ESP32 (Xtensa Dual-Core @ 240 MHz):} Projected single-core inference latency is $\approx 0.57$~ms.
+\end{itemize}
+
+\subsection{Weight-Only Symmetric Int8 Quantization and Simulation}
+\label{sec:quantization}
+To address extreme flash memory constraints on edge microcontrollers, an optional ahead-of-time symmetric per-tensor int8 weight quantization stage was integrated into the compiler. For each Dense layer weight tensor $W$, the per-tensor positive scaling factor is derived as:
+\begin{equation}
+\text{scale} = \begin{cases} \frac{\max(|W|)}{127.0} & \text{if } \max(|W|) > 0 \\ 1.0 & \text{if } \max(|W|) = 0 \end{cases}
+\end{equation}
+Weights are rounded and clipped into $[-127, 127]$ and stored as \texttt{static const int8\_t}, with per-tensor scales stored as single-precision floating-point constants. Bias vectors and intermediate activations are preserved in float32.
+
+\paragraph{Inner-Loop Implementation and Arithmetic Fidelity.}
+Generated C99 kernels dequantize weights on-the-fly during accumulation without dynamic allocation or runtime dependencies:
+\begin{lstlisting}[language=C, basicstyle=\ttfamily\footnotesize, frame=single]
+acc += input[j] * ((float)layer_weights[j * out_dim + i] * layer_scale);
+\end{lstlisting}
+The output is numerically verified against an independent NumPy reference reconstructing $W_{\text{dequant}} = q \cdot \text{scale}$. Both the Tiny (4--8--2) and MNIST (784--128--64--10) compiled models pass strict numerical verification ($\text{atol}=10^{-5}, \text{rtol}=10^{-4}$), with measured maximum absolute errors of $2.98 \times 10^{-8}$ and $1.19 \times 10^{-7}$ respectively.
+
+\paragraph{Empirical Memory, Accuracy, and Latency Results.}
+\begin{itemize}
+    \item \textbf{Flash Storage Compression:} For the MNIST model, static weight flash consumption decreases from 437,544~bytes (427.3~KB) to 110,004~bytes (107.4~KB)---achieving a \textbf{3.98$\times$ storage reduction} (74.9\% savings). The generated C99 source file size decreases from 1,730,385~bytes to 484,444~bytes.
+    \item \textbf{Generalization Accuracy:} Across the complete 10,000-image MNIST test partition (\texttt{t10k}) evaluated with the dequantized NumPy forward pass (\texttt{tools/eval\_accuracy.py}), the float32 model achieves 97.68\% test accuracy (9,768/10,000) and int8 achieves 97.67\% (9,767/10,000): accuracy changed by 0.01 points (9,768 to 9,767); 5 of 10,000 predictions differ (99.95\% agreement).
+    \item \textbf{Host PC Inference Latency:} Measured on PC under GCC \texttt{-O2} on Linux x86\_64 (10,000 iterations), latency was 127.28~$\mu$s (float32) and 91.79~$\mu$s (int8); the cause of the PC timing difference was not investigated, and no performance claim is made for ESP32.
+    \item \textbf{ESP32-S3 Wokwi Simulation Files:} Simulation files targeting the Espressif ESP32-S3 (\texttt{board-esp32-s3-devkitc-1}) are prepared in \texttt{wokwi/} for the Tiny int8 model with Serial Monitor input parsing and microsecond timing via \texttt{micros()}, but have not been simulated. On the host PC, \texttt{model.c} was compiled with GCC (\texttt{gcc -std=c99 -Wall -Wextra -Wpedantic -Werror -c model.c}).
 \end{itemize}
 
 % =========================================================================

@@ -36,6 +36,8 @@ def fuse_dense_relu(program: IRProgram) -> IRProgram:
                 out_dim=current_op.out_dim,
                 weights=current_op.weights,
                 bias=current_op.bias,
+                quantized_weights=current_op.quantized_weights,
+                scale=current_op.scale,
             )
             new_ops.append(fused_op)
             i += 2

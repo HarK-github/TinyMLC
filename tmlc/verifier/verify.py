@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pathlib
 import subprocess
+import tempfile
 from collections.abc import Sequence
 
 import numpy as np
@@ -66,15 +67,11 @@ class ModelVerifier:
         h_path: pathlib.Path,
         input_vector: np.ndarray,
         out_dim: int,
-        out_dir: pathlib.Path,
+        out_dir: pathlib.Path | None = None,
     ) -> np.ndarray:
         """Compile generated C99 source with GCC and execute single inference."""
         if not c_path.is_file() or not h_path.is_file():
             raise TmlcError("E602", f"Generated C source or header missing at {c_path}")
-
-        out_dir.mkdir(parents=True, exist_ok=True)
-        harness_c = out_dir / "verify_harness.c"
-        harness_exe = out_dir / "verify_harness.exe"
 
         in_floats_str = ", ".join(
             format_c_float(float(x)) for x in input_vector.flatten()
@@ -92,60 +89,64 @@ int main(void) {{
     return 0;
 }}
 """
-        harness_c.write_text(harness_code, encoding="utf-8")
+        with tempfile.TemporaryDirectory() as tmp_dir_str:
+            tmp_dir = pathlib.Path(tmp_dir_str)
+            harness_c = tmp_dir / "verify_harness.c"
+            harness_exe = tmp_dir / "verify_harness.exe"
+            harness_c.write_text(harness_code, encoding="utf-8")
 
-        # Compile with GCC
-        cmd_compile = [
-            "gcc",
-            "-std=c99",
-            "-Wall",
-            "-Wextra",
-            "-Wpedantic",
-            "-Werror",
-            "-I",
-            str(out_dir),
-            "-I",
-            str(c_path.parent),
-            str(harness_c),
-            str(c_path),
-            "-o",
-            str(harness_exe),
-            "-lm",
-        ]
+            # Compile with GCC
+            cmd_compile = [
+                "gcc",
+                "-std=c99",
+                "-Wall",
+                "-Wextra",
+                "-Wpedantic",
+                "-Werror",
+                "-I",
+                str(tmp_dir),
+                "-I",
+                str(c_path.parent),
+                str(harness_c),
+                str(c_path),
+                "-o",
+                str(harness_exe),
+                "-lm",
+            ]
 
-        try:
-            comp_res = subprocess.run(cmd_compile, check=False, capture_output=True, text=True)
-        except FileNotFoundError as ex:
-            raise TmlcError("E602", f"GCC not found on system: {ex}") from ex
+            try:
+                comp_res = subprocess.run(cmd_compile, check=False, capture_output=True, text=True)
+            except FileNotFoundError as ex:
+                raise TmlcError("E602", f"GCC not found on system: {ex}") from ex
 
-        if comp_res.returncode != 0:
-            raise TmlcError("E602", f"GCC compilation failed:\n{comp_res.stderr}")
+            if comp_res.returncode != 0:
+                raise TmlcError("E602", f"GCC compilation failed:\n{comp_res.stderr}")
 
-        # Run compiled binary
-        try:
-            run_res = subprocess.run([str(harness_exe)], check=False, capture_output=True, text=True)
-        except Exception as ex:
-            raise TmlcError(
-                "E602", f"Execution of compiled C binary failed: {ex}"
-            ) from ex
+            # Run compiled binary
+            try:
+                run_res = subprocess.run([str(harness_exe)], check=False, capture_output=True, text=True)
+            except Exception as ex:
+                raise TmlcError(
+                    "E602", f"Execution of compiled C binary failed: {ex}"
+                ) from ex
 
-        if run_res.returncode != 0:
-            raise TmlcError(
-                "E602",
-                f"Compiled C binary exited with code {run_res.returncode}:\n{run_res.stderr}",
-            )
+            if run_res.returncode != 0:
+                raise TmlcError(
+                    "E602",
+                    f"Compiled C binary exited with code {run_res.returncode}:\n{run_res.stderr}",
+                )
 
-        parts = [
-            float(line.strip())
-            for line in run_res.stdout.strip().split()
-            if line.strip()
-        ]
-        if len(parts) != out_dim:
-            raise TmlcError(
-                "E601", f"C binary produced {len(parts)} outputs, expected {out_dim}"
-            )
+            parts = [
+                float(line.strip())
+                for line in run_res.stdout.strip().split()
+                if line.strip()
+            ]
+            if len(parts) != out_dim:
+                raise TmlcError(
+                    "E601", f"C binary produced {len(parts)} outputs, expected {out_dim}"
+                )
 
-        return np.array(parts, dtype=np.float32)
+            return np.array(parts, dtype=np.float32)
 
     def verify_model(
         self,

@@ -29,12 +29,14 @@ def download_mnist(data_dir: pathlib.Path) -> None:
         if not local_path.is_file() or local_path.stat().st_size == 0:
             url = MNIST_MIRROR + filename
             print(f"Downloading {url} -> {local_path}...")
+            tmp_path = local_path.with_suffix(".tmp")
             req = urllib.request.Request(url, headers=headers)
             with (
                 urllib.request.urlopen(req, timeout=30) as resp,
-                open(local_path, "wb") as f,
+                open(tmp_path, "wb") as f,
             ):
                 f.write(resp.read())
+            tmp_path.replace(local_path)
 
 
 def load_mnist_images(filepath: pathlib.Path) -> np.ndarray:

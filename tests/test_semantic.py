@@ -12,12 +12,6 @@ from tmlc.semantic.analyzer import SemanticAnalyzer
 from tests.conftest import assert_cli_build_fails
 
 
-def assert_no_model_c_written() -> None:
-    """Verify that no generated/model.c file was created or modified."""
-    model_c = pathlib.Path("generated/model.c")
-    assert not model_c.exists(), "generated/model.c must not exist after invalid input"
-
-
 def test_test9_zero_dimension_e202() -> None:
     """Test 9: Zero dimension produces E202."""
     driver = ParserDriver()

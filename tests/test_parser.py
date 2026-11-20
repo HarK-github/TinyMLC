@@ -14,12 +14,6 @@ from tmlc.parser.lr0 import build_slr1_table
 from tests.conftest import assert_cli_build_fails
 
 
-def assert_no_model_c_written() -> None:
-    """Verify that no generated/model.c file was created or modified."""
-    model_c = pathlib.Path("generated/model.c")
-    assert not model_c.exists(), "generated/model.c must not exist after invalid input"
-
-
 def test_test5_missing_semicolon_e101() -> None:
     """Test 5: Missing semicolon produces E101."""
     fixture_path = pathlib.Path("tests/fixtures/no_semi.tml")

@@ -13,12 +13,6 @@ from tmlc.parser.driver import ParserDriver
 from tests.conftest import assert_cli_build_fails
 
 
-def assert_no_model_c_written() -> None:
-    """Verify that no generated/model.c file was created or modified."""
-    model_c = pathlib.Path("generated/model.c")
-    assert not model_c.exists(), "generated/model.c must not exist after invalid input"
-
-
 def test_test13_missing_weight_file_e301() -> None:
     """Test 13: Missing .npy file produces E301."""
     driver = ParserDriver()

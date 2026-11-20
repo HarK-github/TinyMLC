@@ -90,3 +90,16 @@ def test_verify_cli_without_inherited_thread_env() -> None:
         f"STDOUT:\n{res.stdout}\nSTDERR:\n{res.stderr}"
     )
     assert "PASS" in res.stdout, f"Expected PASS in output:\n{res.stdout}"
+
+
+def test_verify_leaves_no_harness_files_in_generated() -> None:
+    """Ensure verification runs inside a temp directory leaving only model.c and model.h in generated/."""
+    out_dir = pathlib.Path("generated")
+    verifier = ModelVerifier()
+    verifier.verify_model("examples/tiny.tml", out_dir=out_dir)
+
+    # Assert no verify_harness files were left behind in out_dir
+    harness_files = list(out_dir.glob("*verify_harness*"))
+    assert not harness_files, f"Found lingering harness files in {out_dir}: {harness_files}"
+    assert (out_dir / "model.c").is_file()
+    assert (out_dir / "model.h").is_file()

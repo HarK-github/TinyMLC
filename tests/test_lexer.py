@@ -11,12 +11,6 @@ from tmlc.lexer.lexer import Lexer
 from tests.conftest import assert_cli_build_fails
 
 
-def assert_no_model_c_written() -> None:
-    """Verify that no generated/model.c file was created or modified."""
-    model_c = pathlib.Path("generated/model.c")
-    assert not model_c.exists(), "generated/model.c must not exist after invalid input"
-
-
 def test_test3_bad_char_e001() -> None:
     """Test 3: Unknown character '@' produces E001 with exact line and column."""
     fixture_path = pathlib.Path("tests/fixtures/bad_char.tml")

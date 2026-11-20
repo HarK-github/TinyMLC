@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 
+# Limit OpenBLAS and OMP threads on Windows to prevent initialization memory allocation failures
 os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
 os.environ.setdefault("OMP_NUM_THREADS", "1")
 

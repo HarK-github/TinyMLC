@@ -63,3 +63,30 @@ def test_verifier_reports_e602_on_gcc_compile_error() -> None:
         )
     err = exc_info.value
     assert err.code == "E602"
+
+
+def test_verify_cli_without_inherited_thread_env() -> None:
+    """Verify that CLI verify works in a plain terminal where thread env vars are not pre-set."""
+    import os
+    import subprocess
+    import sys
+
+    # Explicitly filter out thread-limiting environment variables to simulate a plain user terminal
+    child_env = {
+        k: v
+        for k, v in os.environ.items()
+        if k not in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS")
+    }
+
+    res = subprocess.run(
+        [sys.executable, "main.py", "verify", "examples/tiny.tml"],
+        env=child_env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert res.returncode == 0, (
+        f"CLI verify failed with exit code {res.returncode}:\n"
+        f"STDOUT:\n{res.stdout}\nSTDERR:\n{res.stderr}"
+    )
+    assert "PASS" in res.stdout, f"Expected PASS in output:\n{res.stdout}"

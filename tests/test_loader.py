@@ -10,6 +10,7 @@ import pytest
 from tmlc.errors import TmlcError
 from tmlc.loader.weights import WeightLoader
 from tmlc.parser.driver import ParserDriver
+from tests.conftest import assert_cli_build_fails
 
 
 def assert_no_model_c_written() -> None:
@@ -30,7 +31,7 @@ def test_test13_missing_weight_file_e301() -> None:
     err = exc_info.value
     assert err.code == "E301", f"Expected E301, got {err.code}"
     assert err.line == 5
-    assert_no_model_c_written()
+    assert_cli_build_fails("tests/fixtures/missing_w.tml", "E301")
 
 
 def test_empty_path_string_e301() -> None:
@@ -45,7 +46,7 @@ def test_empty_path_string_e301() -> None:
     err = exc_info.value
     assert err.code == "E301", f"Expected E301, got {err.code}"
     assert err.line == 5
-    assert_no_model_c_written()
+    assert_cli_build_fails("tests/fixtures/empty_path.tml", "E301")
 
 
 def test_test14_bad_weight_shape_e302() -> None:
@@ -60,7 +61,7 @@ def test_test14_bad_weight_shape_e302() -> None:
     err = exc_info.value
     assert err.code == "E302", f"Expected E302, got {err.code}"
     assert err.line == 5
-    assert_no_model_c_written()
+    assert_cli_build_fails("tests/fixtures/bad_w_shape.tml", "E302")
 
 
 def test_test15_bad_bias_shape_e303() -> None:
@@ -75,7 +76,7 @@ def test_test15_bad_bias_shape_e303() -> None:
     err = exc_info.value
     assert err.code == "E303", f"Expected E303, got {err.code}"
     assert err.line == 5
-    assert_no_model_c_written()
+    assert_cli_build_fails("tests/fixtures/bad_b_shape.tml", "E303")
 
 
 def test_test16_nan_weights_e304() -> None:
@@ -90,7 +91,7 @@ def test_test16_nan_weights_e304() -> None:
     err = exc_info.value
     assert err.code == "E304", f"Expected E304, got {err.code}"
     assert err.line == 5
-    assert_no_model_c_written()
+    assert_cli_build_fails("tests/fixtures/nan_w.tml", "E304")
 
 
 def test_weights_resolve_relative_to_tml_file() -> None:

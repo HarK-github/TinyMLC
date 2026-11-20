@@ -11,6 +11,7 @@ from tmlc.errors import TmlcError
 from tmlc.parser.driver import ParserDriver
 from tmlc.parser.grammar import get_tmlc_grammar
 from tmlc.parser.lr0 import build_slr1_table
+from tests.conftest import assert_cli_build_fails
 
 
 def assert_no_model_c_written() -> None:
@@ -31,7 +32,7 @@ def test_test5_missing_semicolon_e101() -> None:
     err = exc_info.value
     assert err.code == "E101", f"Expected E101, got {err.code}"
     assert err.line == 4, f"Expected line 4, got {err.line}"
-    assert_no_model_c_written()
+    assert_cli_build_fails(fixture_path, "E101")
 
 
 def test_test6_trailing_tokens_e101() -> None:
@@ -46,7 +47,7 @@ def test_test6_trailing_tokens_e101() -> None:
     err = exc_info.value
     assert err.code == "E101", f"Expected E101, got {err.code}"
     assert err.line == 7, f"Expected line 7, got {err.line}"
-    assert_no_model_c_written()
+    assert_cli_build_fails(fixture_path, "E101")
 
 
 def test_test7_missing_input_decl_e101() -> None:
@@ -61,7 +62,7 @@ def test_test7_missing_input_decl_e101() -> None:
     err = exc_info.value
     assert err.code == "E101", f"Expected E101, got {err.code}"
     assert err.line == 3, f"Expected line 3, got {err.line}"
-    assert_no_model_c_written()
+    assert_cli_build_fails(fixture_path, "E101")
 
 
 def test_test8_missing_output_decl_e101() -> None:
@@ -76,7 +77,7 @@ def test_test8_missing_output_decl_e101() -> None:
     err = exc_info.value
     assert err.code == "E101", f"Expected E101, got {err.code}"
     assert err.line == 4, f"Expected line 4, got {err.line}"
-    assert_no_model_c_written()
+    assert_cli_build_fails(fixture_path, "E101")
 
 
 def test_test10_unknown_layer_e101() -> None:
@@ -91,7 +92,7 @@ def test_test10_unknown_layer_e101() -> None:
     err = exc_info.value
     assert err.code == "E101", f"Expected E101, got {err.code}"
     assert err.line == 5, f"Expected line 5, got {err.line}"
-    assert_no_model_c_written()
+    assert_cli_build_fails(fixture_path, "E101")
 
 
 def test_slr1_table_is_conflict_free() -> None:

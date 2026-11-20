@@ -8,6 +8,7 @@ import pytest
 
 from tmlc.errors import TmlcError
 from tmlc.lexer.lexer import Lexer
+from tests.conftest import assert_cli_build_fails
 
 
 def assert_no_model_c_written() -> None:
@@ -29,7 +30,7 @@ def test_test3_bad_char_e001() -> None:
     assert err.line == 3, f"Expected line 3, got {err.line}"
     assert err.col == 5, f"Expected col 5, got {err.col}"
     assert "@" in err.message
-    assert_no_model_c_written()
+    assert_cli_build_fails(fixture_path, "E001")
 
 
 def test_test4_open_string_e002() -> None:
@@ -44,7 +45,7 @@ def test_test4_open_string_e002() -> None:
     assert err.code == "E002", f"Expected E002, got {err.code}"
     assert err.line == 4, f"Expected line 4, got {err.line}"
     assert err.col == 17, f"Expected col 17, got {err.col}"
-    assert_no_model_c_written()
+    assert_cli_build_fails(fixture_path, "E002")
 
 
 def test_negative_value_rejected_as_e001() -> None:
@@ -60,7 +61,7 @@ def test_negative_value_rejected_as_e001() -> None:
     assert err.line == 4, f"Expected line 4, got {err.line}"
     assert err.col == 11, f"Expected col 11, got {err.col}"
     assert "-" in err.message
-    assert_no_model_c_written()
+    assert_cli_build_fails(fixture_path, "E001")
 
 
 def test_tokenize_tiny_example() -> None:

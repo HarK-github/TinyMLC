@@ -5,5 +5,7 @@ __pycache__/
 *.o
 *.exe
 *.out
+*.so
+*.dll
 generated/
 generated_int8/

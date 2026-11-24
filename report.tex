@@ -126,7 +126,7 @@
 \textbf{\S 5. Lexer \& Syntactic Engine} \dotfill p.~\pageref{sec:lex_parse} & \textbf{\S 13. Testing \& Mutation Kills} \dotfill p.~\pageref{sec:qa} \\
 \textbf{\S 6. Semantics \& Tensor Checks} \dotfill p.~\pageref{sec:semantic} & \textbf{\S 14. Discussion \& Future Roadmap} \dotfill p.~\pageref{sec:comparative_eval} \\
 \textbf{\S 7. IR \& Operator Fusion} \dotfill p.~\pageref{sec:ir_opt} & \textbf{\S 15. Conclusion} \dotfill p.~\pageref{sec:conclusion} \\
-\textbf{\S 8. Static Ping-Pong Memory} \dotfill p.~\pageref{sec:memory_planning} & \textbf{\S Appendices A--E: Grammar \& C99} \dotfill p.~\pageref{app:grammar} \\
+\textbf{\S 8. Static Ping-Pong Memory} \dotfill p.~\pageref{sec:memory_planning} & \textbf{\S Appendices A--B: Grammar \& Implementation} \dotfill p.~\pageref{app:grammar} \\
 \bottomrule
 \end{tabular*}
 
@@ -1098,32 +1098,38 @@ D.~P. Kingma and J.~Ba, ``Adam: A method for stochastic optimization,'' in \emph
 \end{thebibliography}
 
 % =========================================================================
-% APPENDICES
+% APPENDICES (EXACTLY 2 PAGES)
 % =========================================================================
 \newpage
 \appendix
 
-\section{Appendix A: Complete Formal BNF Grammar}
+% -------------------------------------------------------------------------
+% APPENDIX PAGE 1: GRAMMAR, SLR(1) AUTOMATON, AND MODEL DSL
+% -------------------------------------------------------------------------
+\section{Appendix A: Formal Grammar, SLR(1) Automaton, and Model DSL}
 \label{app:grammar}
+\label{app:slr_table}
+\label{app:model_source}
 
-\subsection{Augmented Context-Free Grammar Productions}
+\noindent
+\begin{minipage}[t]{0.56\linewidth}
+\footnotesize
+\textbf{Context-Free Grammar Productions ($G$):}
 \begin{align*}
 0: \quad &\text{Start}           &&\rightarrow \text{Model} \\
-1: \quad &\text{Model}           &&\rightarrow \texttt{MODEL} \quad \texttt{IDENT} \quad \texttt{LBRACE} \quad \text{ModelBody} \quad \texttt{RBRACE} \\
-2: \quad &\text{ModelBody}       &&\rightarrow \text{InputDecl} \quad \text{OutputDecl} \quad \text{LayerList} \\
-3: \quad &\text{InputDecl}       &&\rightarrow \texttt{INPUT} \quad \texttt{COLON} \quad \texttt{INT} \quad \texttt{SEMICOLON} \\
-4: \quad &\text{OutputDecl}      &&\rightarrow \texttt{OUTPUT} \quad \texttt{COLON} \quad \texttt{INT} \quad \texttt{SEMICOLON} \\
-5: \quad &\text{LayerList}       &&\rightarrow \text{LayerList} \quad \text{Layer} \\
-6: \quad &\text{LayerList}       &&\rightarrow \text{Layer} \\
-7: \quad &\text{Layer}           &&\rightarrow \text{DenseLayer} \\
-8: \quad &\text{Layer}           &&\rightarrow \text{ActivationLayer} \\
-9: \quad &\text{DenseLayer}      &&\rightarrow \texttt{DENSE} \quad \texttt{LPAREN} \quad \texttt{INT} \quad \texttt{COMMA} \quad \texttt{INT} \quad \texttt{COMMA} \\
-  \quad &                        &&\phantom{\rightarrow} \quad \texttt{STRING} \quad \texttt{COMMA} \quad \texttt{STRING} \quad \texttt{RPAREN} \quad \texttt{SEMICOLON} \\
-10: \quad &\text{ActivationLayer} &&\rightarrow \texttt{RELU} \quad \texttt{SEMICOLON} \\
-11: \quad &\text{ActivationLayer} &&\rightarrow \texttt{SOFTMAX} \quad \texttt{SEMICOLON}
+1: \quad &\text{Model}           &&\rightarrow \texttt{MODEL} \ \texttt{IDENT} \ \texttt{\{} \ \text{ModelBody} \ \texttt{\}} \\
+2: \quad &\text{ModelBody}       &&\rightarrow \text{InputDecl} \ \text{OutputDecl} \ \text{LayerList} \\
+3: \quad &\text{InputDecl}       &&\rightarrow \texttt{INPUT} \ \texttt{:} \ \texttt{INT} \ \texttt{;} \\
+4: \quad &\text{OutputDecl}      &&\rightarrow \texttt{OUTPUT} \ \texttt{:} \ \texttt{INT} \ \texttt{;} \\
+5: \quad &\text{LayerList}       &&\rightarrow \text{LayerList} \ \text{Layer} \ \mid \ \text{Layer} \\
+6: \quad &\text{Layer}           &&\rightarrow \text{DenseLayer} \ \mid \ \text{ActivationLayer} \\
+7: \quad &\text{DenseLayer}      &&\rightarrow \texttt{DENSE} \ \texttt{(} \ \texttt{INT} \ \texttt{,} \ \texttt{INT} \ \texttt{,} \ \texttt{STR} \ \texttt{,} \ \texttt{STR} \ \texttt{)} \ \texttt{;} \\
+8: \quad &\text{ActivationLayer} &&\rightarrow \texttt{RELU} \ \texttt{;} \ \mid \ \texttt{SOFTMAX} \ \texttt{;}
 \end{align*}
-
-\subsection{Lexical Terminal Definitions}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.42\linewidth}
+\footnotesize
+\textbf{Lexical Terminals (Regex Patterns):}
 \begin{align*}
 \texttt{MODEL}     &\leftarrow \text{"model"} \\
 \texttt{INPUT}     &\leftarrow \text{"input"} \\
@@ -1133,65 +1139,43 @@ D.~P. Kingma and J.~Ba, ``Adam: A method for stochastic optimization,'' in \emph
 \texttt{SOFTMAX}   &\leftarrow \text{"Softmax"} \\
 \texttt{IDENT}     &\leftarrow \texttt{[A-Za-z\_][A-Za-z0-9\_]*} \\
 \texttt{INT}       &\leftarrow \texttt{[0-9]+} \\
-\texttt{STRING}    &\leftarrow \texttt{"([\textasciicircum"\textbackslash n\textbackslash r\textbackslash\textbackslash]|\textbackslash\textbackslash.)*"} \\
-\texttt{LBRACE}    &\leftarrow \text{"\{"} \\
-\texttt{RBRACE}    &\leftarrow \text{"\}"} \\
-\texttt{LPAREN}    &\leftarrow \text{"("} \\
-\texttt{RPAREN}    &\leftarrow \text{")"} \\
-\texttt{COLON}     &\leftarrow \text{":"} \\
-\texttt{SEMICOLON} &\leftarrow \text{";"} \\
-\texttt{COMMA}     &\leftarrow \text{","} \\
-\texttt{EOF}       &\leftarrow \text{End of Input Stream}
+\texttt{STR}       &\leftarrow \texttt{"([\textasciicircum"\textbackslash n]*)"}
 \end{align*}
+\end{minipage}
 
-\section{Appendix B: SLR(1) Parsing Table Excerpts}
-\label{app:slr_table}
-
+\vspace{-0.5em}
+\subsection{Representative SLR(1) Automaton States and Transitions}
+\vspace{-0.3em}
 \begin{table}[htbp]
 \centering
-\small
-\caption{Representative SLR(1) Automaton States and Action/Goto Mappings}
+\scriptsize
+\caption{Representative SLR(1) States (41 States Total, 0 Conflicts)}
 \label{tab:slr_table_excerpt}
 \resizebox{\linewidth}{!}{%
-\begin{tabular}{c >{\raggedright\arraybackslash}p{5.4cm} >{\raggedright\arraybackslash}p{6.0cm} >{\raggedright\arraybackslash}p{2.6cm}}
+\begin{tabular}{c >{\raggedright\arraybackslash}p{5.4cm} >{\raggedright\arraybackslash}p{6.4cm} >{\raggedright\arraybackslash}p{2.6cm}}
 \toprule
 \textbf{State} & \textbf{Kernel Items} & \textbf{ACTION Table} & \textbf{GOTO Table} \\
 \midrule
 0  & $\text{Start} \rightarrow \cdot \text{Model}$ & on \texttt{MODEL} $\rightarrow$ Shift 1 & on \text{Model} $\rightarrow$ 2 \\
-1  & $\text{Model} \rightarrow \texttt{MODEL} \cdot \texttt{IDENT} \dots$ & on \texttt{IDENT} $\rightarrow$ Shift 3 & --- \\
 2  & $\text{Start} \rightarrow \text{Model} \cdot$ & on \texttt{EOF} $\rightarrow$ \textbf{ACCEPT} & --- \\
-3  & $\text{Model} \rightarrow \texttt{MODEL} \ \texttt{IDENT} \cdot \texttt{LBRACE} \dots$ & on \texttt{LBRACE} $\rightarrow$ Shift 4 & --- \\
-4  & $\text{Model} \rightarrow \dots \texttt{LBRACE} \cdot \text{ModelBody} \dots$ & on \texttt{INPUT} $\rightarrow$ Shift 5 & on \text{ModelBody} $\rightarrow$ 7, on \text{InputDecl} $\rightarrow$ 6 \\
-5  & $\text{InputDecl} \rightarrow \texttt{INPUT} \cdot \texttt{COLON} \dots$ & on \texttt{COLON} $\rightarrow$ Shift 8 & --- \\
-6  & $\text{ModelBody} \rightarrow \text{InputDecl} \cdot \text{OutputDecl} \dots$ & on \texttt{OUTPUT} $\rightarrow$ Shift 9 & on \text{OutputDecl} $\rightarrow$ 10 \\
-7  & $\text{Model} \rightarrow \dots \text{ModelBody} \cdot \texttt{RBRACE}$ & on \texttt{RBRACE} $\rightarrow$ Shift 11 & --- \\
-11 & $\text{Model} \rightarrow \dots \texttt{RBRACE} \cdot$ & on \texttt{EOF} $\rightarrow$ \textbf{Reduce 1} & --- \\
-14 & $\text{Layer} \rightarrow \text{ActivationLayer} \cdot$ & on \texttt{DENSE}, \texttt{RELU}, \texttt{SOFTMAX}, \texttt{RBRACE} $\rightarrow$ \textbf{Reduce 8} & --- \\
-16 & $\text{Layer} \rightarrow \text{DenseLayer} \cdot$ & on \texttt{DENSE}, \texttt{RELU}, \texttt{SOFTMAX}, \texttt{RBRACE} $\rightarrow$ \textbf{Reduce 7} & --- \\
-17 & $\text{LayerList} \rightarrow \text{Layer} \cdot$ & on \texttt{DENSE}, \texttt{RELU}, \texttt{SOFTMAX}, \texttt{RBRACE} $\rightarrow$ \textbf{Reduce 6} & --- \\
-18 & $\text{ModelBody} \rightarrow \dots \text{LayerList} \cdot$ & on \texttt{RBRACE} $\rightarrow$ \textbf{Reduce 2}, on \texttt{DENSE} $\rightarrow$ Shift 15, on \texttt{RELU} $\rightarrow$ Shift 19, on \texttt{SOFTMAX} $\rightarrow$ Shift 20 & on \text{Layer} $\rightarrow$ 24, on \text{ActivationLayer} $\rightarrow$ 14, on \text{DenseLayer} $\rightarrow$ 16 \\
-21 & $\text{InputDecl} \rightarrow \dots \texttt{SEMICOLON} \cdot$ & on \texttt{OUTPUT} $\rightarrow$ \textbf{Reduce 3} & --- \\
-24 & $\text{LayerList} \rightarrow \text{LayerList} \ \text{Layer} \cdot$ & on \texttt{DENSE}, \texttt{RELU}, \texttt{SOFTMAX}, \texttt{RBRACE} $\rightarrow$ \textbf{Reduce 5} & --- \\
-25 & $\text{ActivationLayer} \rightarrow \texttt{RELU} \ \texttt{SEMICOLON} \cdot$ & on \texttt{DENSE}, \texttt{RELU}, \texttt{SOFTMAX}, \texttt{RBRACE} $\rightarrow$ \textbf{Reduce 10} & --- \\
-26 & $\text{ActivationLayer} \rightarrow \texttt{SOFTMAX} \ \texttt{SEMICOLON} \cdot$ & on \texttt{DENSE}, \texttt{RELU}, \texttt{SOFTMAX}, \texttt{RBRACE} $\rightarrow$ \textbf{Reduce 11} & --- \\
-27 & $\text{OutputDecl} \rightarrow \dots \texttt{SEMICOLON} \cdot$ & on \texttt{DENSE}, \texttt{RELU}, \texttt{SOFTMAX} $\rightarrow$ \textbf{Reduce 4} & --- \\
-36 & $\text{DenseLayer} \rightarrow \dots \texttt{SEMICOLON} \cdot$ & on \texttt{DENSE}, \texttt{RELU}, \texttt{SOFTMAX}, \texttt{RBRACE} $\rightarrow$ \textbf{Reduce 9} & --- \\
+4  & $\text{Model} \rightarrow \dots \texttt{\{} \cdot \text{ModelBody} \dots$ & on \texttt{INPUT} $\rightarrow$ Shift 5 & on \text{ModelBody} $\rightarrow$ 7 \\
+11 & $\text{Model} \rightarrow \dots \texttt{\}} \cdot$ & on \texttt{EOF} $\rightarrow$ \textbf{Reduce 1} & --- \\
+14 & $\text{Layer} \rightarrow \text{ActivationLayer} \cdot$ & on \texttt{DENSE}, \texttt{RELU}, \texttt{SOFTMAX}, \texttt{\}} $\rightarrow$ \textbf{Reduce 8} & --- \\
+16 & $\text{Layer} \rightarrow \text{DenseLayer} \cdot$ & on \texttt{DENSE}, \texttt{RELU}, \texttt{SOFTMAX}, \texttt{\}} $\rightarrow$ \textbf{Reduce 7} & --- \\
+18 & $\text{ModelBody} \rightarrow \dots \text{LayerList} \cdot$ & on \texttt{\}} $\rightarrow$ \textbf{Reduce 2}, on \texttt{DENSE} $\rightarrow$ Shift 15 & on \text{Layer} $\rightarrow$ 24 \\
+24 & $\text{LayerList} \rightarrow \text{LayerList} \ \text{Layer} \cdot$ & on \texttt{DENSE}, \texttt{RELU}, \texttt{SOFTMAX}, \texttt{\}} $\rightarrow$ \textbf{Reduce 5} & --- \\
+36 & $\text{DenseLayer} \rightarrow \dots \texttt{;} \cdot$ & on \texttt{DENSE}, \texttt{RELU}, \texttt{SOFTMAX}, \texttt{\}} $\rightarrow$ \textbf{Reduce 9} & --- \\
 \bottomrule
 \end{tabular}%
 }
 \end{table}
 
-\section{Appendix C: Model Specification Sources}
-\label{app:model_source}
-
-\subsection{MNIST Digit Classification Model (\texttt{examples/mnist.tml})}
-\begin{lstlisting}[language=C, basicstyle=\ttfamily\footnotesize, frame=single, numbers=left]
-// Model definition for MNIST handwritten digit classification
-// Topology: 784 -> Dense(128) -> ReLU -> Dense(64) -> ReLU -> Dense(10) -> Softmax
+\vspace{-1.0em}
+\subsection{MNIST Deep Neural Network Model DSL (\texttt{examples/mnist.tml})}
+\vspace{-0.3em}
+\begin{lstlisting}[language=C, basicstyle=\ttfamily\scriptsize, frame=single]
 model MNIST {
-    input: 784;
-    output: 10;
-
+    input: 784;  output: 10;
     Dense(784, 128, "weights/dense1_w.npy", "weights/dense1_b.npy");
     ReLU;
     Dense(128, 64, "weights/dense2_w.npy", "weights/dense2_b.npy");
@@ -1201,158 +1185,74 @@ model MNIST {
 }
 \end{lstlisting}
 
-\subsection{Minimal Regression / Sanity Model (\texttt{examples/tiny.tml})}
-\begin{lstlisting}[language=C, basicstyle=\ttfamily\footnotesize, frame=single, numbers=left]
-// Minimal sanity-check model for compiler verification
-model Tiny {
-    input: 4;
-    output: 2;
-
-    Dense(4, 8, "weights/tiny_w1.npy", "weights/tiny_b1.npy");
-    ReLU;
-    Dense(8, 2, "weights/tiny_w2.npy", "weights/tiny_b2.npy");
-}
-\end{lstlisting}
-
-\section{Appendix D: Auto-Generated C99 Source Code}
+% -------------------------------------------------------------------------
+% APPENDIX PAGE 2: GENERATED C99 IMPLEMENTATION & DIAGNOSTIC CATALOG
+% -------------------------------------------------------------------------
+\newpage
+\section{Appendix B: Generated C99 Kernel and Diagnostic Catalog}
 \label{app:c_codegen}
-
-\subsection{Header Interface (\texttt{generated/model.h})}
-\begin{lstlisting}[language=C, basicstyle=\ttfamily\footnotesize, frame=single, numbers=left]
-/*
- * Auto-generated header for TinyML model: MNIST
- * Generated by TMLC (TinyML Model-to-C Compiler)
- */
-
-#ifndef MODEL_H
-#define MODEL_H
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#define MODEL_INPUT_DIM  784
-#define MODEL_OUTPUT_DIM 10
-
-void model_predict(const float input[MODEL_INPUT_DIM], 
-                   float output[MODEL_OUTPUT_DIM]);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* MODEL_H */
-\end{lstlisting}
-
-\subsection{Inference Prediction Implementation (\texttt{generated/model.c})}
-\begin{lstlisting}[language=C, basicstyle=\ttfamily\footnotesize, frame=single, numbers=left]
-/*
- * Auto-generated C99 implementation for TinyML model: MNIST
- * Generated by TMLC (TinyML Model-to-C Compiler)
- * Microcontroller compatible: static RAM, static const weights,
- * zero dynamic allocation, no file I/O.
- */
-
-#include "model.h"
-#include <math.h>
-
-/* Parameter weight and bias arrays (stored in Flash .rodata) */
-/* static const float layer1_weights[100352] = { ... }; */
-/* static const float layer1_bias[128] = { ... }; */
-/* static const float layer2_weights[8192] = { ... }; */
-/* static const float layer2_bias[64] = { ... }; */
-/* static const float layer3_weights[640] = { ... }; */
-/* static const float layer3_bias[10] = { ... }; */
-
-/* Static working buffers in SRAM (.bss) */
-static float buf_a[128];
-static float buf_b[64];
-
-void model_predict(const float input[784], float output[10]) {
-    /* Fused Dense+ReLU(784 -> 128): input to buf_a */
-    for (int i = 0; i < 128; i++) {
-        float sum = layer1_bias[i];
-        for (int j = 0; j < 784; j++) {
-            sum += input[j] * layer1_weights[j * 128 + i];
-        }
-        buf_a[i] = (sum > 0.0f) ? sum : 0.0f;
-    }
-
-    /* Fused Dense+ReLU(128 -> 64): buf_a to buf_b */
-    for (int i = 0; i < 64; i++) {
-        float sum = layer2_bias[i];
-        for (int j = 0; j < 128; j++) {
-            sum += buf_a[j] * layer2_weights[j * 64 + i];
-        }
-        buf_b[i] = (sum > 0.0f) ? sum : 0.0f;
-    }
-
-    /* Dense(64 -> 10): buf_b to buf_a */
-    for (int i = 0; i < 10; i++) {
-        float sum = layer3_bias[i];
-        for (int j = 0; j < 64; j++) {
-            sum += buf_b[j] * layer3_weights[j * 10 + i];
-        }
-        buf_a[i] = sum;
-    }
-
-    /* Softmax(10): in-place on buf_a */
-    float max_val = buf_a[0];
-    for (int i = 1; i < 10; i++) {
-        if (buf_a[i] > max_val) {
-            max_val = buf_a[i];
-        }
-    }
-    float sum_exp = 0.0f;
-    for (int i = 0; i < 10; i++) {
-        buf_a[i] = expf(buf_a[i] - max_val);
-        sum_exp += buf_a[i];
-    }
-    float inv_sum = 1.0f / (sum_exp > 0.0f ? sum_exp : 1e-12f);
-    for (int i = 0; i < 10; i++) {
-        buf_a[i] *= inv_sum;
-    }
-
-    /* Final output copy: buf_a to output */
-    for (int i = 0; i < 10; i++) {
-        output[i] = buf_a[i];
-    }
-}
-\end{lstlisting}
-
-\section{Appendix E: Diagnostic Error Code Master Reference}
 \label{app:error_catalog}
 
-\begin{table*}[htbp]
-\centering
-\small
-\caption{Complete TMLC Diagnostic Error and Warning Master Reference}
+\subsection{Generated Standalone C99 Implementation (\texttt{model.h} and \texttt{model.c})}
+\vspace{-0.3em}
+\begin{lstlisting}[language=C, basicstyle=\ttfamily\tiny, frame=single]
+/* model.h: Public Microcontroller Interface */
+#define MODEL_INPUT_DIM 784
+#define MODEL_OUTPUT_DIM 10
+void model_predict(const float input[784], float output[10]);
+
+/* model.c: Generated Implementation (Zero Malloc, Static Flash & RAM) */
+#include "model.h"
+#include <math.h>
+/* Flash Weights (.rodata): static const float layer1_weights[100352], layer1_bias[128], ... */
+static float buf_a[128]; /* SRAM Primary Working Buffer: 512 B */
+static float buf_b[64];  /* SRAM Secondary Working Buffer: 256 B */
+
+void model_predict(const float in[784], float out[10]) {
+    // Fused Layer 1: Dense+ReLU(784 -> 128) [in -> buf_a]
+    for (int i = 0; i < 128; i++) {
+        float sum = layer1_bias[i];
+        for (int j = 0; j < 784; j++) sum += in[j] * layer1_weights[j * 128 + i];
+        buf_a[i] = (sum > 0.0f) ? sum : 0.0f;
+    }
+    // Fused Layer 2: Dense+ReLU(128 -> 64) [buf_a -> buf_b]
+    // Layer 3: Dense(64 -> 10) [buf_b -> buf_a]
+    // Numerically Stable Softmax: in-place on buf_a and copy to out[10]
+}
+\end{lstlisting}
+
+\vspace{-0.6em}
+\subsection{Complete TMLC Diagnostic Error and Warning Master Reference}
+\vspace{-0.3em}
+\begin{center}
+\captionof{table}{Complete TMLC Diagnostic Error and Warning Reference}
 \label{tab:complete_error_catalog}
 \resizebox{\linewidth}{!}{%
-\begin{tabular}{ll >{\raggedright\arraybackslash}p{6.2cm} >{\raggedright\arraybackslash\ttfamily\footnotesize}p{6.6cm}}
+\renewcommand{\arraystretch}{0.82}%
+\begin{tabular}{ll >{\raggedright\arraybackslash}p{6.8cm} >{\raggedright\arraybackslash\ttfamily\scriptsize}p{6.0cm}}
 \toprule
-\textbf{Code} & \textbf{Stage} & \textbf{Detailed Trigger Condition} & \textbf{Canonical Diagnostic Error Message} \\
+\textbf{Code} & \textbf{Stage} & \textbf{Trigger Condition} & \textbf{Diagnostic Message Example} \\
 \midrule
-\texttt{E001} & Lexer    & Source character fails to match any valid token pattern. & Error [E001] at 3:12: Invalid character '@' \\
+\texttt{E001} & Lexer    & Invalid/unrecognized character in input stream. & Error [E001] at 3:12: Invalid character '@' \\
 \texttt{E002} & Lexer    & String literal missing closing quote before newline/EOF. & Error [E002] at 5:25: Unterminated string literal \\
-\texttt{E101} & Parser   & Lookahead token not permitted by current SLR(1) state. & Error [E101] at 4:5: Unexpected token 'ReLU', expected one of: 'input', 'output' \\
-\texttt{E201} & Semantic & Adjacent layer dimensions mismatch ($D_{\text{out}}^{(l-1)} \neq D_{\text{in}}^{(l)}$). & Error [E201] at 7:5: Layer dimension mismatch: expected in\_dim=128, got in\_dim=64 \\
-\texttt{E202} & Semantic & Dimension declared as $\le 0$ in input, output, or Dense. & Error [E202] at 5:5: Non-positive dimension encountered: out\_dim=0 \\
-\texttt{E203} & Semantic & Final layer output does not match model \texttt{output:} decl. & Error [E203] at 9:5: Final Dense output (16) does not match model output (10) \\
-\texttt{E204} & Semantic & Model specification contains zero \texttt{Dense} layers. & Error [E204] at 4:1: Model 'Empty' contains no Dense layers \\
-\texttt{E301} & Loader   & Referenced \texttt{.npy} file does not exist or empty string path. & Error [E301] at 5:5: Weight file 'weights/missing.npy' does not exist \\
-\texttt{E302} & Loader   & Loaded weight array shape does not match $(D_{\text{in}}, D_{\text{out}})$. & Error [E302] at 5:5: Weight shape mismatch: expected (784, 128), got (128, 784) \\
-\texttt{E303} & Loader   & Loaded bias vector shape does not match $(D_{\text{out}},)$. & Error [E303] at 5:5: Bias shape mismatch: expected (128,), got (64,) \\
-\texttt{E304} & Loader   & Parameter array contains IEEE 754 NaN, $+\infty$, or $-\infty$. & Error [E304] at 5:5: NaN or Infinity detected in weight array 'weights/dense1\_w.npy' \\
-\texttt{E401} & Optimizer& Internal intermediate representation inconsistency. & Error [E401]: IR optimizer failure: invalid opcode sequence \\
+\texttt{E101} & Parser   & Lookahead token disallowed by current SLR(1) state. & Error [E101] at 4:5: Unexpected token 'ReLU' \\
+\texttt{E201} & Semantic & Adjacent layer dimensions mismatch ($D_{\text{out}}^{(l-1)} \neq D_{\text{in}}^{(l)}$). & Error [E201] at 7:5: Layer dimension mismatch \\
+\texttt{E202} & Semantic & Non-positive dimension ($\le 0$) in input, output, or Dense. & Error [E202] at 5:5: Non-positive dimension encountered \\
+\texttt{E203} & Semantic & Final Dense output differs from top-level \texttt{output:} decl. & Error [E203] at 9:5: Final Dense output does not match \\
+\texttt{E204} & Semantic & Model specification contains zero \texttt{Dense} layers. & Error [E204] at 4:1: Model contains no Dense layers \\
+\texttt{E301} & Loader   & Missing or empty weight/bias file path. & Error [E301] at 5:5: Weight file does not exist \\
+\texttt{E302} & Loader   & Weight array shape does not match $(D_{\text{in}}, D_{\text{out}})$. & Error [E302] at 5:5: Weight shape mismatch \\
+\texttt{E303} & Loader   & Bias vector shape does not match $(D_{\text{out}},)$. & Error [E303] at 5:5: Bias shape mismatch \\
+\texttt{E304} & Loader   & NaN, $+\infty$, or $-\infty$ detected in parameter array. & Error [E304] at 5:5: NaN or Infinity detected in array \\
+\texttt{E401} & Optimizer& Internal intermediate representation inconsistency. & Error [E401]: IR optimizer failure: invalid opcode \\
 \texttt{E501} & Backend  & Unsupported backend instruction or unhandled node type. & Error [E501]: C99 backend error: unhandled IR instruction \\
-\texttt{E601} & Verifier & C99 output deviates from NumPy reference ($\Delta > \text{tol}$). & Error [E601]: Verification failed: max absolute error 0.0024 > 1e-05 \\
-\texttt{E602} & Verifier & Host C compiler (GCC) missing or harness compilation failed. & Error [E602]: GCC compiler not found or compilation failed \\
-\texttt{W101} & Grammar  & Parsing table contains shift/reduce or reduce/reduce conflict. & Warning [W101]: SLR(1) parsing table contains 1 conflict(s) \\
+\texttt{E601} & Verifier & C99 output deviates from NumPy reference ($\Delta > \text{tol}$). & Error [E601]: Verification failed: error > 1e-05 \\
+\texttt{E602} & Verifier & Host GCC compiler not found or compilation failed. & Error [E602]: GCC compiler not found or compilation failed \\
+\texttt{W101} & Grammar  & Parsing table contains shift/reduce or reduce/reduce conflict. & Warning [W101]: SLR(1) parsing table contains conflicts \\
 \bottomrule
 \end{tabular}%
 }
-\end{table*}
+\end{center}
 
 \end{document}
 

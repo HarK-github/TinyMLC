@@ -9,3 +9,11 @@ __pycache__/
 *.dll
 generated/
 generated_int8/
+
+# TeX auxiliary and backup files
+*.aux
+*.log
+*.toc
+*.out
+*.synctex.gz
+*.bak

@@ -27,13 +27,8 @@
     urlcolor=blue!80!black,
     pdfauthor={Harshit Kandpal, Utkarsh Umap, Satyam Singh Thakur},
     pdftitle={TMLC: An Ahead-of-Time Optimizing Compiler from Domain-Specific Model Specifications to Microcontroller-Grade C99},
-    pdfkeywords={TinyML, Compiler Architecture, Formal Grammars, SLR(1), Operator Fusion, Static Memory Planning, Bipartite Scheduling, Microcontrollers, ANSI C99, Edge AI}
+    pdfkeywords={TinyML, Compiler Architecture, SLR(1) Parsing, Operator Fusion, Static Memory Planning, Microcontrollers, ANSI C99, Edge AI}
 }
-
-% --- Theorem Environments ---
-\newtheorem{theorem}{Theorem}[section]
-\newtheorem{lemma}[theorem]{Lemma}
-\newtheorem{definition}[theorem]{Definition}
 
 % --- Code Listing Styling ---
 \definecolor{codegreen}{rgb}{0,0.6,0}
@@ -101,7 +96,7 @@
     
     {\Huge \textbf{TMLC: TinyML Model-to-C Compiler}}\\[0.45em]
     {\large \textbf{An Ahead-of-Time Optimizing Compiler from Domain-Specific Model Specifications to Microcontroller-Grade C99}}\\[0.35em]
-    {\small \textit{Formal SLR(1) Grammar $\cdot$ Provable Zero Dynamic Allocation $\cdot$ Operator Fusion $\cdot$ Bipartite Ping-Pong Memory Planning $\cdot$ ESP32 Hardware Verification}}\\[1.1em]
+    {\small \textit{SLR(1) Parsing $\cdot$ Zero Dynamic Allocation $\cdot$ Operator Fusion $\cdot$ Two-Buffer Ping-Pong Memory $\cdot$ ESP32 Hardware Demo}}\\[1.1em]
     
     \begin{tabular}{ccc}
         \textbf{Harshit Kandpal} & \textbf{Utkarsh Umap} & \textbf{Satyam Singh Thakur} \\
@@ -195,7 +190,7 @@ TMLC is architected around four core design tenets:
     \item \textbf{Pure Static Memory Allocation (Zero Malloc):} TMLC provably eliminates all dynamic memory allocation. All intermediate tensor activation buffers are pre-calculated at compile time and allocated as static global buffers in the \texttt{.bss} section. Immutable network weights are emitted as \texttt{static const} arrays targeted directly for non-volatile Flash memory (the \texttt{.rodata} segment).
     \item \textbf{Formal SLR(1) Grammar and Syntax Determinism:} Rather than relying on fragile ad-hoc configuration formats (such as JSON or YAML) or monolithic schema formats, TMLC defines a mathematically rigorous domain-specific language (\texttt{.tml}) governed by a formal SLR(1) context-free grammar with exactly 0 shift/reduce and 0 reduce/reduce conflicts.
     \item \textbf{Intermediate Representation and Operator Fusion:} TMLC constructs a linear intermediate representation (IR) that executes algebraic optimization passes, specifically fusing affine linear transformations (Dense layers) with non-linear activation functions (ReLU), eliminating intermediate activation round-trips to SRAM.
-    \item \textbf{Two-Buffer Ping-Pong Static Memory Planning:} TMLC implements an optimal bipartite buffer reuse algorithm that reduces peak SRAM footprint to the maximum dimension of two adjacent layers, achieving a 62\% memory reduction over naive layer-wise allocation.
+    \item \textbf{Two-Buffer Ping-Pong Static Memory Planning:} TMLC implements a two-buffer ping-pong memory reuse algorithm that reduces peak SRAM footprint to the maximum dimension of two adjacent layers, achieving a 62\% memory reduction over naive layer-wise allocation.
 \end{enumerate}
 
 % =========================================================================
@@ -394,14 +389,14 @@ $11$ & $\text{ActivationLayer}$ & $\rightarrow \texttt{SOFTMAX} \quad \texttt{SE
 \end{tabular}
 \end{table}
 
-\subsection{Mathematical Derivation of FIRST and FOLLOW Sets}
-In SLR(1) parsing, lookahead reduction decisions depend strictly on the $\text{FOLLOW}$ sets of non-terminals [6]:
+\subsection{FIRST and FOLLOW Sets}
+In SLR(1) parsing, lookahead reduction decisions depend on the $\text{FOLLOW}$ sets of non-terminals:
 \begin{align}
     \text{FIRST}(\alpha) &= \{ t \in \Sigma \mid \alpha \Rightarrow^* t\beta \} \cup \{ \epsilon \text{ if } \alpha \Rightarrow^* \epsilon \} \\
     \text{FOLLOW}(A)    &= \{ t \in \Sigma \cup \{\texttt{EOF}\} \mid S' \Rightarrow^* \alpha A t \beta \}
 \end{align}
 
-Because the grammar contains no $\epsilon$-productions ($A \rightarrow \epsilon \notin R$), the derivations proceed directly:
+Because the grammar contains no empty ($\epsilon$) productions, the derivations are straightforward:
 \begin{itemize}[leftmargin=*]
     \item $\text{FIRST}(\text{ActivationLayer}) = \{\texttt{RELU}, \texttt{SOFTMAX}\}$
     \item $\text{FIRST}(\text{DenseLayer}) = \{\texttt{DENSE}\}$
@@ -417,8 +412,7 @@ For FOLLOW sets:
     \item $\text{FOLLOW}(\text{InputDecl}) = \text{FIRST}(\text{OutputDecl}) = \{\texttt{OUTPUT}\}$
     \item $\text{FOLLOW}(\text{OutputDecl}) = \text{FIRST}(\text{LayerList}) = \{\texttt{DENSE}, \texttt{RELU}, \texttt{SOFTMAX}\}$
     \item $\text{FOLLOW}(\text{LayerList}) = \text{FOLLOW}(\text{Layer}) = \text{FOLLOW}(\text{DenseLayer})$ \\
-    $\quad = \text{FOLLOW}(\text{ActivationLayer}) = \Sigma_{\text{fol}}$ \\
-    where $\Sigma_{\text{fol}} = \{\texttt{DENSE}, \texttt{RELU}, \texttt{SOFTMAX}, \texttt{RBRACE}\}$.
+    $\quad = \text{FOLLOW}(\text{ActivationLayer}) = \{\texttt{DENSE}, \texttt{RELU}, \texttt{SOFTMAX}, \texttt{RBRACE}\}$.
 \end{itemize}
 
 Table~\ref{tab:first_follow_summary} summarizes the complete FIRST and FOLLOW sets across all non-terminals.
@@ -445,61 +439,23 @@ $\text{ActivationLayer}$ & $\{\texttt{RELU}, \texttt{SOFTMAX}\}$      & $\{\text
 \end{tabular}
 \end{table}
 
-\subsection{SLR(1) Conflict-Freeness Theorem and Proof}
-
-\begin{theorem}[SLR(1) Determinism of Grammar $G$]
-The grammar $G$ is an unambiguous, conflict-free Simple LR(1) grammar. Specifically, the parsing table generated from the 37 states of $\mathcal{C}$ contains exactly zero Shift/Reduce ($S/R$) conflicts and zero Reduce/Reduce ($R/R$) conflicts.
-\end{theorem}
-
-\begin{proof}
-An SLR(1) parsing table contains a conflict if and only if for some state $I_k \in \mathcal{C}$:
-\begin{enumerate}
-    \item A Shift/Reduce conflict occurs: there exists a terminal $a \in \Sigma$ such that $[A \rightarrow \alpha \cdot a \beta] \in I_k$ and $[B \rightarrow \gamma \cdot] \in I_k$ with $a \in \text{FOLLOW}(B)$.
-    \item A Reduce/Reduce conflict occurs: there exist distinct items $[A \rightarrow \alpha \cdot] \in I_k$ and $[B \rightarrow \beta \cdot] \in I_k$ such that $\text{FOLLOW}(A) \cap \text{FOLLOW}(B) \neq \emptyset$.
-\end{enumerate}
-
-A systematic analysis of all 37 canonical states in $\mathcal{C}$ establishes the following exhaustive partition:
+\subsection{Parser Determinism and Conflict Analysis}
+An SLR(1) parsing table can encounter two types of ambiguities:
 \begin{itemize}[leftmargin=*]
-    \item \textbf{Shift-Only States (25 States):} In 25 of the 37 states, every LR(0) item contains the dot before an unconsumed grammar symbol ($[A \rightarrow \alpha \cdot X \beta] \in I_k$ with $X \in V \cup \Sigma$). Because these states contain no completed reduction items ($[B \rightarrow \gamma \cdot] \notin I_k$), no reduction action is generated, trivially precluding both Shift/Reduce and Reduce/Reduce conflicts.
-    \item \textbf{Completed Reduction-Only States (11 States):} Exactly 11 states in $\mathcal{C}$ contain completed items with the dot at the rightmost position and zero outgoing shift transitions:
-    \begin{itemize}[leftmargin=1.5em, itemsep=1pt]
-        \item State 2: $[\text{Start} \rightarrow \text{Model} \cdot]$ on lookahead $\{\texttt{EOF}\} \implies \textbf{Accept}$.
-        \item State 11: $[\text{Model} \rightarrow \dots \texttt{RBRACE} \cdot]$ on $\{\texttt{EOF}\} \implies \textbf{Reduce 1}$.
-        \item State 14: $[\text{Layer} \rightarrow \text{ActivationLayer} \cdot]$ on $\Sigma_{\text{fol}} \implies \textbf{Reduce 8}$.
-        \item State 16: $[\text{Layer} \rightarrow \text{DenseLayer} \cdot]$ on $\Sigma_{\text{fol}} \implies \textbf{Reduce 7}$.
-        \item State 17: $[\text{LayerList} \rightarrow \text{Layer} \cdot]$ on $\Sigma_{\text{fol}} \implies \textbf{Reduce 6}$.
-        \item State 21: $[\text{InputDecl} \rightarrow \dots \texttt{SEMICOLON} \cdot]$ on $\{\texttt{OUTPUT}\} \implies \textbf{Reduce 3}$.
-        \item State 24: $[\text{LayerList} \rightarrow \text{LayerList} \ \text{Layer} \cdot]$ on $\Sigma_{\text{fol}} \implies \textbf{Reduce 5}$.
-        \item State 25: $[\text{ActivationLayer} \rightarrow \texttt{RELU} \ \texttt{SEMICOLON} \cdot]$ on $\Sigma_{\text{fol}} \implies \textbf{Reduce 10}$.
-        \item State 26: $[\text{ActivationLayer} \rightarrow \texttt{SOFTMAX} \ \texttt{SEMICOLON} \cdot]$ on $\Sigma_{\text{fol}} \implies \textbf{Reduce 11}$.
-        \item State 27: $[\text{OutputDecl} \rightarrow \dots \texttt{SEMICOLON} \cdot]$ on $\{\texttt{DENSE}, \texttt{RELU}, \texttt{SOFTMAX}\} \implies \textbf{Reduce 4}$.
-        \item State 36: $[\text{DenseLayer} \rightarrow \dots \texttt{SEMICOLON} \cdot]$ on $\Sigma_{\text{fol}} \implies \textbf{Reduce 9}$.
-    \end{itemize}
-    Each of these 11 states contains strictly one reduction item and zero competing shift items. Consequently, no conflict can manifest in any of these states.
-    \item \textbf{Shift/Reduce Boundary State (State 18):} Exactly one state in $\mathcal{C}$ contains both a reduction item and shift items. State 18 contains the reduction item:
-    \begin{equation}
-        [\text{ModelBody} \rightarrow \text{InputDecl} \ \text{OutputDecl} \ \text{LayerList} \cdot]
-    \end{equation}
-    along with closure items for subsequent layer declarations $[\text{LayerList} \rightarrow \text{LayerList} \cdot \text{Layer}]$, triggering shifts on:
-    \begin{equation}
-        \text{Shift Terminals} = \text{FIRST}(\text{Layer}) = \{\texttt{DENSE}, \texttt{RELU}, \texttt{SOFTMAX}\}
-    \end{equation}
-    The reduction lookahead is strictly constrained to the follow set:
-    \begin{equation}
-        \text{Reduce Lookahead} = \text{FOLLOW}(\text{ModelBody}) = \{\texttt{RBRACE}\}
-    \end{equation}
-    Evaluating the intersection of the shift and reduce lookahead sets:
-    \begin{equation}
-        \text{FOLLOW}(\text{ModelBody}) \cap \text{FIRST}(\text{Layer}) = \{\texttt{RBRACE}\} \cap \{\texttt{DENSE}, \texttt{RELU}, \texttt{SOFTMAX}\} = \emptyset
-    \end{equation}
-    Because the intersection is empty, the parser deterministically shifts when observing any layer keyword and reduces Production 2 when encountering \texttt{RBRACE}.
+    \item \textbf{Shift/Reduce (S/R) Conflict:} The parser cannot decide whether to shift the next token or reduce using a completed production rule.
+    \item \textbf{Reduce/Reduce (R/R) Conflict:} Multiple distinct rules complete at the same time on the same lookahead token.
 \end{itemize}
-Since all 37 states possess mutually disjoint action sets, the grammar is deterministic under SLR(1):
-\begin{equation}
-    \text{Shift/Reduce Conflicts} = 0, \qquad \text{Reduce/Reduce Conflicts} = 0
-\end{equation}
-This completes the formal proof.
-\end{proof}
+
+When TMLC builds the SLR(1) parsing table across all 37 canonical states:
+\begin{itemize}[leftmargin=*]
+    \item \textbf{25 Shift-Only States:} These states are scanning unconsumed tokens and contain no completed reduction items, precluding any conflicts.
+    \item \textbf{11 Reduction-Only States:} In these states, a specific rule is completed (such as finishing an activation or layer). Each contains exactly one reduction action and zero shift transitions.
+    \item \textbf{1 Boundary State (State 18):} State 18 occurs after parsing a layer declaration. The parser can either shift to read another layer (\texttt{Dense}, \texttt{ReLU}, \texttt{Softmax}) or reduce the model body upon seeing the closing brace (\texttt{\}}). Because the reduction lookahead is strictly $\{\texttt{\}}\}$ and the shift tokens are $\{\texttt{Dense}, \texttt{ReLU}, \texttt{Softmax}\}$, their intersection is empty:
+    $$\{\texttt{\}}\} \cap \{\texttt{Dense}, \texttt{ReLU}, \texttt{Softmax}\} = \emptyset$$
+    There is no overlap, so the decision is completely deterministic.
+\end{itemize}
+
+As verified by running \texttt{python main.py tables}, the grammar yields \textbf{0 Shift/Reduce conflicts and 0 Reduce/Reduce conflicts}, confirming that it parses deterministically in linear $O(n)$ time.
 
 % =========================================================================
 % SECTION 5: LEXICAL AND SYNTACTIC ANALYSIS
@@ -552,21 +508,17 @@ Syntactic correctness guarantees that a \texttt{.tml} file conforms to the gramm
 \subsection{Semantic Checking Engine}
 The semantic analyzer (\texttt{tmlc.semantic.analyzer}) executes multi-pass validation directly over the AST produced by the parser:
 \begin{itemize}[leftmargin=*]
-    \item \textbf{Positivity of Dimensions (E202):} In physical microcontrollers, tensor buffers require strictly positive byte allocations. The analyzer verifies that $D_{\text{model\_in}} > 0$, $D_{\text{model\_out}} > 0$, and $\forall l \in \text{DenseLayers}, D_{\text{in}}^{(l)} > 0 \land D_{\text{out}}^{(l)} > 0$.
-    \item \textbf{Layer Dimension Continuity Theorem (E201):} In a valid feed-forward neural network, the output feature space of layer $l-1$ must identically match the input feature space of layer $l$. If an adjacent pair of layers violates this continuity ($D_{\text{out}}^{(l-1)} \neq D_{\text{in}}^{(l)}$), TMLC flags error \textbf{E201}.
-    \item \textbf{Structural Constraints (E203, E204):} The analyzer verifies that the model contains at least one Dense layer (E204) and that the output dimension of the final Dense layer matches the model's top-level \texttt{output:} declaration (E203).
+    \item \textbf{Positive Dimensions (E202):} Microcontroller tensor buffers require positive sizes. The analyzer asserts that all declared input, output, and layer dimensions are strictly greater than zero ($> 0$).
+    \item \textbf{Layer Dimension Continuity (E201):} In a valid feed-forward network, each layer's output dimension must match the next layer's input dimension ($D_{\text{out}}^{(l-1)} = D_{\text{in}}^{(l)}$). Any mismatch triggers error \textbf{E201}.
+    \item \textbf{Structural Constraints (E203, E204):} The analyzer checks that the model contains at least one Dense layer (E204) and that the output dimension of the final Dense layer matches the model's top-level \texttt{output:} declaration (E203).
 \end{itemize}
 
 \subsection{Binary Weight Tensor Loader and Numerical Sanitation}
 The parameter loader (\texttt{tmlc.loader.weights}) ingests the binary weight matrices and bias vectors referenced in \texttt{Dense} declarations:
 \begin{itemize}[leftmargin=*]
-    \item \textbf{NumPy Binary Serialization Format (\texttt{.npy}):} TMLC natively parses NumPy binary array formats, validating magic headers, little-endian float32 data types, and shape metadata.
-    \item \textbf{Weight Shape Validation (E301, E302, E303):} Verifies that weight and bias files exist (E301), that weight matrices possess shape $(D_{\text{in}}, D_{\text{out}})$ (E302), and that bias vectors possess shape $(D_{\text{out}},)$ (E303).
-    \item \textbf{IEEE 754 Floating-Point Sanitation (E304):} Embedded microcontrollers lacking hardware floating-point exception traps can propagate invalid floating-point values indefinitely. TMLC inspects every single float in loaded weight and bias arrays:
-    \begin{equation}
-        \forall w \in W \cup b, \quad \neg \text{isnan}(w) \quad \land \quad \neg \text{isinf}(w)
-    \end{equation}
-    If any value is found to be $\text{NaN}$, $+\infty$, or $-\infty$, TMLC terminates with diagnostic code \textbf{E304}.
+    \item \textbf{NumPy Binary Format (\texttt{.npy}):} TMLC parses NumPy \texttt{.npy} files, validating magic headers, little-endian float32 data types, and shape metadata.
+    \item \textbf{Weight Shape Validation (E301, E302, E303):} Verifies that weight and bias files exist (E301), that weight matrices match shape $(D_{\text{in}}, D_{\text{out}})$ (E302), and that bias vectors match shape $(D_{\text{out}},)$ (E303).
+    \item \textbf{Floating-Point Sanitation (E304):} Microcontrollers lacking floating-point exception traps can silently propagate invalid floats. TMLC scans every float in loaded arrays using \texttt{np.isnan} and \texttt{np.isinf}; if any $\text{NaN}$, $+\infty$, or $-\infty$ is found, compilation halts with error \textbf{E304}.
 \end{itemize}
 
 % =========================================================================
@@ -621,61 +573,25 @@ Standard desktop deep learning libraries allocate tensors on demand via \texttt{
 
 TMLC completely eradicates this failure mode by guaranteeing \textbf{provable zero dynamic allocation}: no call to \texttt{malloc}, \texttt{calloc}, \texttt{realloc}, or \texttt{free} is ever emitted.
 
-\subsection{Bipartite Ping-Pong Buffer Allocation Algorithm and Optimality Proof}
-To minimize working SRAM consumption, TMLC implements a bipartite static memory planning algorithm (\texttt{tmlc.optimizer.buffers}).
+\subsection{Two-Buffer Ping-Pong Memory Allocation}
+In a sequential feed-forward neural network, layer $l$ only requires the output activations of layer $l-1$ as its input. Consequently, only two activation tensors ever need to exist in memory at any instant during forward inference: the layer being read, and the layer being written.
 
-\begin{definition}[Sequential Live Range and Interference Graph]
-Let a feed-forward computational pipeline consist of an ordered sequence of $N$ operations $\langle o_1, o_2, \dots, o_N \rangle$ executing at discrete time indices $t \in \{1, 2, \dots, N\}$. For each intermediate tensor $T_k$ produced by operation $o_k$ and consumed by operation $o_{k+1}$ ($1 \le k \le N-1$), the live range interval is defined by the half-open interval:
-\begin{equation}
-    I_k = [t_k, \ t_{k+1})
-\end{equation}
-The memory interference graph $G_{\text{int}} = (V, E)$ possesses vertex set $V = \{T_1, T_2, \dots, T_{N-1}\}$ corresponding to intermediate tensors, with an undirected edge $(T_j, T_k) \in E$ if and only if their live intervals overlap:
-\begin{equation}
-    (T_j, T_k) \in E \iff I_j \cap I_k \neq \emptyset
-\end{equation}
-\end{definition}
+Instead of allocating a separate array for every layer (which wastes precious RAM) or relying on dynamic heap allocation (\texttt{malloc}), TMLC implements a simple static \textbf{Ping-Pong Buffer} scheme (\texttt{tmlc.optimizer.buffers}):
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Buffer A (Primary):} Statically sized to fit the largest intermediate layer (128 floats = 512 bytes for MNIST).
+    \item \textbf{Buffer B (Secondary):} Statically sized to fit the second-largest intermediate layer (64 floats = 256 bytes for MNIST).
+\end{itemize}
 
-\begin{theorem}[Bipartite Ping-Pong Buffer Optimality]
-\label{thm:pingpong_optimality}
-For any strictly sequential feed-forward neural network pipeline of $N$ operations with non-branching dataflow:
-\begin{enumerate}
-    \item The memory interference graph $G_{\text{int}}$ is isomorphic to a simple linear path graph $P_{N-1}$ and is bipartite with chromatic number $\chi(G_{\text{int}}) = 2$.
-    \item Exactly two physical static working buffers $\mathcal{B}_0$ and $\mathcal{B}_1$ are necessary and sufficient to store all intermediate activations without dynamic memory allocation, without memory clobbering, and with zero runtime overhead.
-    \item The minimal conflict-free physical capacities of the buffers are given by the partition suprema:
-    \begin{align}
-        S(\mathcal{B}_0) &= \max_{\substack{1 \le k \le N-1 \\ k \text{ is odd}}} \left(\dim(T_k) \times \text{sizeof}(\text{float})\right), \\
-        S(\mathcal{B}_1) &= \max_{\substack{1 \le k \le N-1 \\ k \text{ is even}}} \left(\dim(T_k) \times \text{sizeof}(\text{float})\right)
-    \end{align}
-    and total peak working SRAM is bounded by $S_{\text{peak}} = S(\mathcal{B}_0) + S(\mathcal{B}_1)$.
-\end{enumerate}
-\end{theorem}
+During execution, operations alternate back and forth between Buffer A and Buffer B:
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Layer 1 (Dense+ReLU):} Reads from \texttt{input}, writes into \texttt{buf\_a} (128 floats).
+    \item \textbf{Layer 2 (Dense+ReLU):} Reads from \texttt{buf\_a}, writes into \texttt{buf\_b} (64 floats).
+    \item \textbf{Layer 3 (Dense):} Reads from \texttt{buf\_b}, writes back into \texttt{buf\_a} (10 floats).
+    \item \textbf{Layer 4 (Softmax):} Executed in-place directly on \texttt{buf\_a}.
+    \item \textbf{Output Copy:} Copies the final 10 floats from \texttt{buf\_a} to the caller's \texttt{output} buffer.
+\end{itemize}
 
-\begin{proof}
-Consider the live intervals $I_k = [t_k, t_{k+1})$. For any pair of distinct intermediate tensors $T_j, T_k$ with $j < k$:
-\begin{equation}
-    I_j \cap I_k = [t_j, t_{j+1}) \cap [t_k, t_{k+1})
-\end{equation}
-Because discrete execution steps strictly satisfy $t_j < t_{j+1} \le t_k < t_{k+1}$, the intersection is non-empty if and only if $t_{j+1} > t_k$, which holds exclusively when $k = j + 1$. 
-Consequently, edges in $E$ exist solely between adjacent tensor pairs:
-\begin{equation}
-    E = \{(T_k, T_{k+1}) \mid 1 \le k \le N-2\}
-\end{equation}
-The graph $G_{\text{int}} = (V, E)$ is therefore identical to the linear path graph $P_{N-1}$. Since path graphs contain no cycles of any length (and specifically no odd cycles of length $2m+1$), by K\"{o}nig's theorem $G_{\text{int}}$ is bipartite.
-
-A graph is 2-colorable if and only if it is bipartite; hence $\chi(G_{\text{int}}) = 2$. Two colors (corresponding to buffers $\mathcal{B}_0$ and $\mathcal{B}_1$) are sufficient to ensure that no two adjacent vertices receive identical colors, which guarantees that $T_k$ and $T_{k+1}$ never map to the same physical buffer during their overlapping execution window. Furthermore, since $T_k$ and $T_{k+1}$ are concurrently live during operation $o_{k+1}$ (as $o_{k+1}$ reads $T_k$ while writing $T_{k+1}$), at least two distinct buffers are strictly necessary whenever in-place overwrite is not algebraically permissible:
-\begin{equation}
-    \chi(G_{\text{int}}) = 2 \implies \text{Buffer Count} = 2
-\end{equation}
-Assigning odd-indexed tensors $T_{2m-1}$ to buffer partition $\mathcal{B}_0$ and even-indexed tensors $T_{2m}$ to buffer partition $\mathcal{B}_1$ yields two mutually independent vertex sets. Within each independent set, no two tensors share an edge; their lifetimes are disjoint:
-\begin{equation}
-    \forall j, k \in \text{Partition } p \ (j \neq k), \quad I_j \cap I_k = \emptyset
-\end{equation}
-Because their lifetimes never overlap, all tensors within partition $p$ may safely share the identical physical memory address space. The required physical memory for partition $p$ is therefore the maximum size required by any individual tensor mapped to it:
-\begin{equation}
-    S(\mathcal{B}_0) = \max_{k \text{ odd}} \text{Size}(T_k), \qquad S(\mathcal{B}_1) = \max_{k \text{ even}} \text{Size}(T_k)
-\end{equation}
-This completes the proof.
-\end{proof}
+This alternating strategy guarantees that peak working SRAM is strictly capped at **768 bytes** ($512 + 256$), requiring **zero dynamic memory allocation** and completely eliminating memory fragmentation.
 
 Execution alternates between these two static global buffers in a strict ping-pong sequence:
 \begin{align}
@@ -754,18 +670,9 @@ void model_predict(const float input[MODEL_INPUT_DIM],
 \end{lstlisting}
 
 \subsection{Exact Floating-Point Parameter Serialization (\texttt{\%.9g})}
-A critical design requirement of an ahead-of-time compiler is bit-level parameter fidelity. In standard C code generators, floating-point weights are frequently formatted using default precision format specifiers such as \texttt{\%f} (which truncates at 6 decimal places).
+A common pitfall in C code generation is formatting floating-point constants using default specifiers such as \texttt{\%f}, which truncates output to 6 decimal places and introduces silent parameter corruption.
 
-By Matula's inconvertibility theorem and Goldberg's IEEE 754 analysis [7], for a base-$b$ floating-point system with $p$ bits of significand precision converted to base-$B$ (here, decimal $B=10$), the minimum number of decimal digits $P$ required to guarantee bijective round-trip identity ($x = \text{fl}_2(\text{fl}_{10}(x))$ for all representable binary floats) satisfies:
-\begin{equation}
-    P \ge 1 + \left\lceil p \log_{10}(2) \right\rceil
-\end{equation}
-For IEEE 754 single-precision (binary32), $p = 24$ (comprising 23 explicit fraction bits plus 1 implicit leading significand bit):
-\begin{equation}
-    P \ge 1 + \lceil 24 \times 0.3010299957 \rceil = 1 + \lceil 7.2247 \rceil = 1 + 8 = 9
-\end{equation}
-If fewer than 9 decimal digits are emitted, the pigeonhole principle guarantees that distinct binary32 values collide into identical decimal representations, creating irreversible parameter corruption upon cross-compilation.
-TMLC enforces exact weight serialization via \texttt{f"\{val:.9g\}f"}, printing up to 9 significant decimal digits with an explicit \texttt{f} literal suffix (e.g., \texttt{0.0709535852f}). This prevents unintended promotion to 64-bit \texttt{double} in C cross-compilers, ensuring direct single-precision hardware FPU register utilization on target microcontrollers.
+To guarantee bit-level fidelity, TMLC formats all floating-point numbers using \texttt{\%.9g} with an explicit \texttt{f} literal suffix (e.g., \texttt{0.0709535852f}). In IEEE 754 single-precision (32-bit float), printing 9 significant decimal digits guarantees that converting a float to text and back recovers the exact original binary value without rounding loss. The trailing \texttt{f} suffix additionally prevents C compilers from implicitly promoting constants to 64-bit \texttt{double}, allowing the code to execute directly on 32-bit hardware FPUs without emulation overhead.
 
 \subsection{Fused Dense+ReLU Inner Loop Generation}
 Parameter matrices are emitted as static constant global arrays in Flash memory:
@@ -814,10 +721,7 @@ for (int i = 0; i < 10; i++) {
 \end{lstlisting}
 
 \subsection{Prohibited CRT Call Audit}
-To verify absolute compliance with bare-metal embedded standards, TMLC enforces an automated static assertion on all generated C code, ensuring zero occurrences of prohibited C runtime symbols:
-\begin{equation}
-    \text{Matches}(\texttt{"malloc|calloc|realloc|free|fopen"}, \texttt{model.c}) = \emptyset
-\end{equation}
+To verify compliance with bare-metal embedded standards, TMLC runs automated checks in \texttt{test\_codegen.py} asserting that dynamic memory allocation and file I/O functions (\texttt{malloc}, \texttt{calloc}, \texttt{realloc}, \texttt{free}, and \texttt{fopen}) never appear in the generated \texttt{model.c}.
 
 % =========================================================================
 % SECTION 10: NUMERICAL VERIFICATION
@@ -856,13 +760,10 @@ The verification command (\texttt{python main.py verify examples/mnist.tml}) exe
     \item \textbf{Automatic Teardown:} The temporary directory is deleted, ensuring zero filesystem pollution.
 \end{enumerate}
 
-\subsection{Floating-Point Error Bounds and Empirical Results}
-For an inner product of dimension $n$ evaluated in floating-point arithmetic with machine epsilon $\epsilon_{\text{mach}} = 2^{-24} \approx 5.96 \times 10^{-8}$, Wilkinson's backward error analysis [8] bounds the computed dot product $\hat{s} = \text{fl}\left(\sum_{i=1}^n x_i w_i\right)$ by:
-\begin{equation}
-    |\hat{s} - s| \le \gamma_n \sum_{i=1}^n |x_i| |w_i|, \qquad \gamma_n = \frac{n \epsilon_{\text{mach}}}{1 - n \epsilon_{\text{mach}}}
-\end{equation}
+\subsection{Numerical Verification Results}
+Because GCC optimizations and NumPy can evaluate floating-point operations in slightly different order, minor round-off differences on the order of float32 machine epsilon can arise.
 
-TMLC establishes strict verification thresholds: $|y_{\text{C}} - y_{\text{ref}}| \le \text{atol} + \text{rtol} \times |y_{\text{ref}}|$ with absolute tolerance $\text{atol} = 1 \times 10^{-5}$ and relative tolerance $\text{rtol} = 1 \times 10^{-4}$.
+TMLC evaluates prediction fidelity using \texttt{np.allclose} with an absolute tolerance threshold of $\text{atol} = 1 \times 10^{-5}$ and relative tolerance of $\text{rtol} = 1 \times 10^{-4}$.
 
 \begin{figure}[htbp]
     \centering
@@ -871,11 +772,9 @@ TMLC establishes strict verification thresholds: $|y_{\text{C}} - y_{\text{ref}}
     \label{fig:numerical_verification_error}
 \end{figure}
 
-As depicted in Figure~\ref{fig:numerical_verification_error}, empirical validation across test inputs demonstrates extraordinary numerical precision:
-\begin{equation}
-    \max |y_{\text{C}} - y_{\text{ref}}| = 7.92 \times 10^{-9}
-\end{equation}
-The observed maximum error is over \textbf{1,200 times smaller} than the absolute tolerance threshold ($10^{-5}$).
+As shown in Figure~\ref{fig:numerical_verification_error}, empirical testing across test inputs confirms exact correspondence between the compiled C code and the Python reference:
+$$\max |y_{\text{C}} - y_{\text{ref}}| = 7.92 \times 10^{-9}$$
+This measured discrepancy is over \textbf{1,200 times smaller} than the $10^{-5}$ verification threshold, confirming that C code generation, operator fusion, and buffer reuse introduce zero observable error.
 
 % =========================================================================
 % SECTION 11: TRAINING METHODOLOGY
@@ -1155,7 +1054,7 @@ By departing from the prevailing paradigm of heavy embedded runtime interpreters
     \item \textbf{Formal Grammatical Determinism:} Governed by an SLR(1) context-free grammar with 37 states and provably 0 shift/reduce and 0 reduce/reduce conflicts, guaranteeing deterministic parsing and clear error diagnostics (E001--E101).
     \item \textbf{Semantic and Numerical Integrity:} Multi-pass semantic checks enforce dimensional continuity, tensor shape compatibility, and complete IEEE 754 float sanitation against NaN and infinity hazards (E201--E304).
     \item \textbf{Algebraic Operator Fusion:} Linear IR optimization fuses Dense affine transformations and non-linear ReLU activations into compound register-level kernels, eliminating intermediate memory round-trips to SRAM.
-    \item \textbf{Static Ping-Pong Buffer Planning:} A bipartite static memory allocator eliminates all dynamic memory allocation (\texttt{malloc}), restricting peak working SRAM for a 109,386-parameter MNIST model to just \textbf{768 Bytes} (0.75~KB).
+    \item \textbf{Static Ping-Pong Buffer Planning:} A two-buffer static memory allocator eliminates all dynamic memory allocation (\texttt{malloc}), restricting peak working SRAM for a 109,386-parameter MNIST model to just \textbf{768 Bytes} (0.75~KB).
     \item \textbf{High-Precision C99 Code Generation:} Formatting weights via \texttt{\%.9g} guarantees exact IEEE 754 single-precision round-tripping, while a numerically stable Softmax formulation eliminates float32 exponent overflow.
     \item \textbf{Sub-Millisecond Execution and Numerical Rigor:} Under GCC \texttt{-O2} optimization, the compiled model achieves an inference latency of \textbf{195.65 $\mu$s} ($>5,111$ inferences per second) with an empirical numerical discrepancy against decoupled NumPy references of just $7.92 \times 10^{-9}$.
     \item \textbf{Comprehensive Quality Assurance:} A 40-test green test suite verified via end-to-end subprocess CLI testing and fault-injection mutation analysis establishes complete confidence in compiler correctness.

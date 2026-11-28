@@ -439,6 +439,13 @@ $\text{ActivationLayer}$ & $\{\texttt{RELU}, \texttt{SOFTMAX}\}$      & $\{\text
 \end{tabular}
 \end{table}
 
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.88\linewidth]{slr1_parser_architecture.pdf}
+    \caption{TMLC Deterministic SLR(1) Compiler Frontend Architecture: Lexical analysis, 37-state canonical LR(0) collection, conflict-free shift-reduce driver, and syntax-directed AST synthesis.}
+    \label{fig:slr1_parser_architecture}
+\end{figure}
+
 \subsection{Parser Determinism and Conflict Analysis}
 An SLR(1) parsing table can encounter two types of ambiguities:
 \begin{itemize}[leftmargin=*]
@@ -904,6 +911,13 @@ The output is numerically verified against an independent NumPy reference recons
     \item \textbf{Embedded Simulation \& Conformance Checking:} Emulation configurations targeting the Espressif ESP32-S3 microcontroller (\texttt{board-esp32-s3-devkitc-1}) were established in the Wokwi simulation framework (\texttt{wokwi/}) supporting UART streaming and microsecond timer instrumentation via \texttt{micros()}. The auto-generated translation units compile with zero diagnostics under strict conformance flags (\texttt{gcc -std=c99 -Wall -Wextra -Wpedantic -Werror -c model.c}).
 \end{itemize}
 
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.88\linewidth]{quantization_differential_verification.pdf}
+    \caption{Symmetric Int8 Quantization and Differential Verification Pipeline: Dynamic scale factor calibration, quantized C99 emission, and closed-loop validation against independent NumPy reference.}
+    \label{fig:quantization_verification}
+\end{figure}
+
 \subsection{Physical Microcontroller Deployment: Real-Time ESP32 Interactive Web Demonstration}
 \label{sec:esp32_hardware_demo}
 
@@ -935,6 +949,13 @@ As illustrated in Figure~\ref{fig:esp32_hardware_demo}, the physical demonstrato
 \end{subfigure}
 \caption{Physical Hardware Deployment on ESP32 Microcontroller. The physical ESP32 board (resting on the host keyboard, connected via USB) runs the TMLC compiled C99 int8 model, hosting an autonomous Wi-Fi SoftAP and web server. Left pane: Serial monitor telemetry capturing live boot, SoftAP configuration, and real-time inference telemetry. Right pane: Responsive web UI showing user-drawn canvas strokes, top predicted class, and confidence distribution.}
 \label{fig:esp32_hardware_demo}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.88\linewidth]{esp32_dualcore_architecture.pdf}
+    \caption{Physical ESP32 Dual-Core Microcontroller Architecture: Protocol core (PRO\_CPU, Core 0) services Wi-Fi SoftAP and LwIP HTTP server, while application core (APP\_CPU, Core 1) executes hard real-time forward inference ($1.28$ ms) with zero dynamic allocation.}
+    \label{fig:esp32_dualcore_architecture}
 \end{figure}
 
 \subsubsection{Empirical Hardware Telemetry}

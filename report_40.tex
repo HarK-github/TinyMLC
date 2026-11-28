@@ -1,0 +1,1748 @@
+\documentclass[11pt,a4paper]{article}
+
+% --- Essential Packages ---
+\usepackage[margin=1in,top=1in,bottom=1in]{geometry}
+\usepackage{amsmath,amssymb,amsfonts,amsthm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{hyperref}
+
+% --- Graphics Path ---
+\graphicspath{{figures/}}
+
+% --- Hyperlink Setup ---
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!70!black,
+    citecolor=green!50!black,
+    urlcolor=blue!80!black,
+    pdfauthor={Harshit Kandpal, Utkarsh Umap, Satyam Singh Thakur},
+    pdftitle={TMLC: An Ahead-of-Time Optimizing Compiler from Domain-Specific Model Specifications to Microcontroller-Grade C99},
+    pdfkeywords={TinyML, Compiler Architecture, SLR(1) Parsing, Operator Fusion, Static Memory Planning, Microcontrollers, ANSI C99, Edge AI}
+}
+
+% --- Code Listing Styling ---
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.97,0.97,0.97}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+\lstset{style=mystyle}
+
+% --- Header / Footer Aesthetics ---
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textit{TMLC: Ahead-of-Time Optimizing Compiler for Embedded Deep Learning}}
+\fancyhead[R]{\small\textit{40-Page Extended Engineering Monograph}}
+\fancyfoot[L]{\small\textit{H. Kandpal, U. Umap, S. S. Thakur}}
+\fancyfoot[R]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+% --- Title and Authors ---
+\title{
+    \vspace{-1.5cm}
+    \textbf{\huge TMLC: An Ahead-of-Time Optimizing Compiler from Domain-Specific Model Specifications to Microcontroller-Grade C99} \\[0.6em]
+    \large\textbf{Formal SLR(1) Grammar, Provable Zero Dynamic Allocation, Operator Fusion, Static Memory Ping-Pong Planning, and Empirical Hardware Evaluation} \\[0.4em]
+    \normalsize\textit{A Technical Monograph on Compiler Architecture, Formal Verification, and Edge Systems}
+}
+
+\author{
+    \textbf{Harshit Kandpal} \qquad \textbf{Utkarsh Umap} \qquad \textbf{Satyam Singh Thakur} \\[0.4em]
+    \textit{Department of Computer Science and Engineering}
+}
+
+\date{\today \quad $\vert$ \quad Compiler Version 1.0.0-Release \quad $\vert$ \quad 40-Page Extended Engineering Monograph}
+
+\begin{document}
+
+% =========================================================================
+% EXECUTIVE HALF COVER PAGE WITH SECTION INDEXING
+% =========================================================================
+\begin{titlepage}
+\thispagestyle{empty}
+\begin{center}
+    {\large \textsc{\textbf{Department of Computer Science and Engineering}}}\\[0.25em]
+    {\normalsize \textsc{Compiler Architecture and Embedded Systems Technical Report Series}}\\[0.6em]
+    \hrule height 1.8pt
+    \vspace{0.8em}
+    
+    {\Huge \textbf{TMLC: TinyML Model-to-C Compiler}}\\[0.45em]
+    {\large \textbf{An Ahead-of-Time Optimizing Compiler from Domain-Specific Model Specifications to Microcontroller-Grade C99}}\\[0.35em]
+    {\small \textit{SLR(1) Parsing $\cdot$ Zero Dynamic Allocation $\cdot$ Operator Fusion $\cdot$ Two-Buffer Ping-Pong Memory $\cdot$ ESP32 Hardware Demo}}\\[1.1em]
+    
+    \begin{tabular}{ccc}
+        \textbf{Harshit Kandpal} & \textbf{Utkarsh Umap} & \textbf{Satyam Singh Thakur} \\
+        \texttt{B24CS505} & \texttt{B24CS049} & \texttt{B24CS038} \\
+    \end{tabular}\\[0.65em]
+    {\footnotesize \textbf{Publication Series:} Monograph Series on Embedded Compilers \quad $\vert$ \quad \textbf{Compiler Version:} 1.0.0-Release \quad $\vert$ \quad \textbf{Date:} \today}
+\end{center}
+
+\vspace{0.5em}
+\hrule height 1.0pt
+\vspace{0.8em}
+
+\begin{center}
+    {\large \textbf{\textsc{Executive Report Index \& Document Directory}}}
+\end{center}
+\vspace{0.2em}
+
+\noindent
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} p{0.485\textwidth} p{0.485\textwidth} @{}}
+\toprule
+\textbf{Part I: Formal Architecture \& Frontend} & \textbf{Part II: Optimization, Runtime \& Results} \\
+\midrule
+\textbf{\S 1. Introduction \& MCU Limits} \dotfill p.~\pageref{sec:introduction} & \textbf{\S 9. ANSI C99 Codegen Backend} \dotfill p.~\pageref{sec:codegen} \\
+\textbf{\S 2. Related Work (TFLite, CMSIS)} \dotfill p.~\pageref{sec:related_work} & \textbf{\S 10. Strict Numerical Verification} \dotfill p.~\pageref{sec:verification} \\
+\textbf{\S 3. DSL Language Specification} \dotfill p.~\pageref{sec:dsl_spec} & \textbf{\S 11. Model Training (MNIST)} \dotfill p.~\pageref{sec:training} \\
+\textbf{\S 4. Formal Grammar \& SLR(1)} \dotfill p.~\pageref{sec:formal_grammar} & \textbf{\S 12. Hardware Latency \& ESP32} \dotfill p.~\pageref{sec:evaluation} \\
+\textbf{\S 5. Lexer \& Syntactic Engine} \dotfill p.~\pageref{sec:lex_parse} & \textbf{\S 13. Testing \& Mutation Kills} \dotfill p.~\pageref{sec:qa} \\
+\textbf{\S 6. Semantics \& Tensor Checks} \dotfill p.~\pageref{sec:semantic} & \textbf{\S 14. Discussion \& Future Roadmap} \dotfill p.~\pageref{sec:comparative_eval} \\
+\textbf{\S 7. IR \& Operator Fusion} \dotfill p.~\pageref{sec:ir_opt} & \textbf{\S 15. Conclusion} \dotfill p.~\pageref{sec:conclusion} \\
+\textbf{\S 8. Static Ping-Pong Memory} \dotfill p.~\pageref{sec:memory_planning} & \textbf{\S Appendices A--B: Grammar \& Implementation} \dotfill p.~\pageref{app:grammar} \\
+\bottomrule
+\end{tabular*}
+
+\vspace{0.8em}
+\begin{center}
+\footnotesize
+\fbox{
+\parbox{0.96\textwidth}{
+\textbf{Key Architectural Scorecard:} 109,386 Parameters $\vert$ $784 \to 128 \to 64 \to 10$ $\vert$ \textbf{768 Bytes} Peak Working SRAM $\vert$ \textbf{110,004 Bytes} Flash Int8 Weights ($3.98\times$ Compression) $\vert$ \textbf{0 Bytes} Dynamic Heap Allocation $\vert$ \textbf{97.68\%} Accuracy $\vert$ \textbf{134 ms} ESP32 SoftAP Web Inference.
+}
+}
+\end{center}
+\end{titlepage}
+
+\newpage
+\pagenumbering{arabic}
+\setcounter{page}{2}
+
+\setcounter{tocdepth}{2}
+\tableofcontents
+\newpage
+
+% =========================================================================
+% SECTION 1: INTRODUCTION
+% =========================================================================
+\section{Introduction}
+\label{sec:introduction}
+
+\subsection{The Edge Artificial Intelligence Paradigm and Microcontroller Constraints}
+The rapid proliferation of edge computing has catalyzed an urgent demand for deploying machine learning models directly onto resource-constrained embedded systems, colloquially termed \textit{TinyML} [1, 2]. Edge deployment guarantees data privacy by eliminating raw sensor transmission over wireless links, slashes communication latency to sub-millisecond timescales, and enables autonomous operation in disconnected or battery-operated environments, such as biomedical sensors, predictive maintenance units, and environmental monitoring nodes.
+
+However, microcontrollers (MCUs) represent one of the most hostile computing environments for traditional deep learning frameworks. The fundamental constraints of embedded hardware dictate strict engineering boundaries:
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Severe Memory Scarcity:} While modern desktop and server GPUs boast tens of gigabytes of high-throughput memory, embedded microcontrollers typically feature static RAM (SRAM) capacities measured in tens to hundreds of kilobytes (e.g., 32~KB to 512~KB on ARM Cortex-M4 or ESP32 architectures) and non-volatile Flash storage (ROM) between 128~KB and 2~MB.
+    \item \textbf{Harvard Memory Architecture:} Unlike unified Von Neumann desktop systems, many embedded microcontrollers enforce a physical and architectural segregation between code memory (Flash) and working data memory (SRAM). Weights and immutable constants must reside in Flash to avoid exhausting precious SRAM.
+    \item \textbf{Absence of Operating Systems and Dynamic Memory Hazards:} Safety-critical and bare-metal embedded applications run without virtual memory, paging, or memory protection units (MPU). Dynamic heap allocation via standard C runtime routines (\texttt{malloc}, \texttt{calloc}, \texttt{free}) introduces non-deterministic execution times, heap fragmentation, memory leaks, and unpredictable allocation failures that can crash unattended systems.
+    \item \textbf{Strict Real-Time Latency Deadlines:} Applications such as anomaly detection in rotational machinery or keyword spotting require deterministic, single-pass inference latency without background garbage collection or runtime initialization pauses.
+\end{enumerate}
+
+\subsection{Critique of Existing TinyML Runtimes}
+Existing embedded inference solutions, such as TensorFlow Lite for Microcontrollers (TFLite Micro) [1] and microTVM [3], attempt to bridge desktop machine learning frameworks to microcontrollers by porting general-purpose runtime interpreters or runtime harnesses:
+\begin{itemize}[leftmargin=*]
+    \item \textbf{FlatBuffers and Model Deserialization Overhead:} TFLite Micro relies on serialized FlatBuffers models stored in Flash. At startup, a runtime interpreter must parse the FlatBuffer schema, traverse the computation graph, and dynamically bind operator kernels, introducing latency and requiring hundreds of lines of parsing logic.
+    \item \textbf{Tensor Arena Management:} TFLite Micro allocates intermediate activations within a monolithic ``tensor arena'' allocated at runtime. Determining the exact required arena size requires trial-and-error profiling, and incorrect sizing leads to out-of-memory errors during runtime initialization.
+    \item \textbf{Dynamic Kernel Dispatch:} Operator execution occurs via indirect function pointers traversed through an interpreter dispatch loop, inhibiting compiler inlining, loop unrolling, and aggressive optimizations by native C cross-compilers (such as \texttt{arm-none-eabi-gcc}).
+    \item \textbf{Bloated Code Footprint:} The inclusion of general-purpose runtime interpreters, unused operator kernels, and fallback dispatchers bloats binary executable sizes, often requiring 50~KB to 150~KB of Flash memory solely for runtime infrastructure.
+\end{itemize}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.95\linewidth]{compiler_pipeline.pdf}
+    \caption{End-to-End TMLC Compiler Architecture: From DSL and serialized NumPy weight tensors through SLR(1) parsing, semantic validation, operator fusion, static memory planning, to dependency-free ANSI C99 deployment code.}
+    \label{fig:compiler_pipeline}
+\end{figure}
+
+\subsection{The TMLC Philosophy: Ahead-of-Time Model Compilation}
+To overcome these architectural limitations, the \textbf{TinyML Model-to-C Compiler (TMLC)} introduces an ahead-of-time (AoT) domain-specific optimizing compilation framework designed to translate feed-forward neural network topologies into completely self-contained, human-readable, dependency-free ANSI C99 source code. 
+
+TMLC is architected around four core design tenets:
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Pure Static Memory Allocation (Zero Malloc):} TMLC provably eliminates all dynamic memory allocation. All intermediate tensor activation buffers are pre-calculated at compile time and allocated as static global buffers in the \texttt{.bss} section. Immutable network weights are emitted as \texttt{static const} arrays targeted directly for non-volatile Flash memory (the \texttt{.rodata} segment).
+    \item \textbf{Formal SLR(1) Grammar and Syntax Determinism:} Rather than relying on fragile ad-hoc configuration formats (such as JSON or YAML) or monolithic schema formats, TMLC defines a mathematically rigorous domain-specific language (\texttt{.tml}) governed by a formal SLR(1) context-free grammar with exactly 0 shift/reduce and 0 reduce/reduce conflicts.
+    \item \textbf{Intermediate Representation and Operator Fusion:} TMLC constructs a linear intermediate representation (IR) that executes algebraic optimization passes, specifically fusing affine linear transformations (Dense layers) with non-linear activation functions (ReLU), eliminating intermediate activation round-trips to SRAM.
+    \item \textbf{Two-Buffer Ping-Pong Static Memory Planning:} TMLC implements a two-buffer ping-pong memory reuse algorithm that reduces peak SRAM footprint to the maximum dimension of two adjacent layers, achieving a 62\% memory reduction over naive layer-wise allocation.
+\end{enumerate}
+
+% =========================================================================
+% SECTION 2: RELATED WORK
+% =========================================================================
+\section{Related Work}
+\label{sec:related_work}
+
+The execution of deep neural networks on edge hardware has sparked diverse compiler and runtime paradigms. This section categorizes the state of the art into interpreter-based runtimes, optimized micro-kernels, and ahead-of-time graph compilers.
+
+\subsection{Interpreter-Based Embedded Runtimes}
+\textbf{TensorFlow Lite for Microcontrollers (TFLite Micro):} David et al. [1] introduced TFLite Micro as a runtime designed to execute quantized TensorFlow models on bare-metal systems. TFLite Micro operates by ingesting a FlatBuffers byte array generated by the TensorFlow Lite converter. Execution is governed by an \texttt{OpResolver} and an interpreter loop that iterates through nodes in the execution plan. While TFLite Micro achieves portability across architectures, it incurs non-trivial initialization latency due to FlatBuffers schema traversal and memory allocation within a developer-managed \textit{tensor arena}. Furthermore, dynamic dispatch prevents standard cross-compilers from performing whole-program dead-code elimination, inlining, and register allocation across layer boundaries.
+
+\textbf{TinyEngine:} Lin et al. propose memory-efficient inference frameworks that optimize memory scheduling for microcontroller computer vision. While TinyEngine reduces peak memory usage through fine-grained patch-based inference and specialized in-place execution, it still relies on specialized runtime glue code and complex compilation pipelines targeting specific vendor toolchains.
+
+\subsection{Optimized Architecture-Specific Micro-Kernels}
+\textbf{ARM CMSIS-NN:} Lai et al. [4] developed CMSIS-NN, an open-source collection of hand-optimized assembly and intrinsic C functions designed to maximize neural network performance on ARM Cortex-M processor cores (such as Cortex-M4, M7, M33, and M55). CMSIS-NN leverages SIMD instruction extensions (e.g., \texttt{\_\_SMLAD} for dual 16-bit signed multiply-accumulate operations) and 4-way loop unrolling to maximize compute throughput. However, CMSIS-NN is not a compiler; it is an operator kernel library. Developers must manually write the C orchestration code, manage intermediate buffer pointers, allocate scratchpad memory, and bind weight tensors. TMLC acts as a higher-level compiler that can directly generate code structured to leverage these low-level patterns.
+
+\subsection{Ahead-of-Time Deep Learning Compilers}
+\textbf{TVM and microTVM:} Chen et al. [3] developed TVM, an end-to-end optimizing compiler that transforms high-level computational graphs (from PyTorch, ONNX, and TensorFlow) into low-level machine code via tensor expression lowerings and schedule optimization. The microTVM extension targets bare-metal microcontrollers through ahead-of-time C code generation. While microTVM produces high-performance code, the toolchain involves substantial infrastructural weight, requiring Python-based AutoTVM tuning infrastructures and heavy dependency stacks that are difficult to integrate into simple embedded firmware builds.
+
+\subsection{Positioning of TMLC}
+Table~\ref{tab:runtime_comparison} delineates the comparative architectural landscape. TMLC combines formal parsing and language safety with pure, dependency-free ANSI C99 ahead-of-time code generation. Unlike TFLite Micro, TMLC requires zero runtime interpreter code and zero dynamic memory allocation. Unlike raw CMSIS-NN libraries, TMLC automatically plans memory, validates dimensions, fuses operations, and generates human-readable C source code directly from high-level model specifications.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Architectural Comparison of Embedded Neural Network Inference Frameworks}
+\label{tab:runtime_comparison}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Metric / Feature} & \textbf{TMLC} & \textbf{TFLite Micro} & \textbf{CMSIS-NN} & \textbf{microTVM} \\
+\midrule
+Execution Paradigm & Ahead-of-Time (AoT) & Interpreted Bytecode & Manual Library Calls & AoT C Codegen \\
+Target Language & Pure ANSI C99 & C++11 / FlatBuffers & C / ARM Intrinsics & C / C++ \\
+Dynamic Allocation (\texttt{malloc}) & \textbf{Zero (Provable)} & Arena Allocation & Manual Pointer Mgmt & Arena / Static \\
+External Dependencies & \textbf{None (0 bytes)} & FlatBuffers, TFLM Core & CMSIS-Core & TVM C Runtime \\
+Memory Planning & Automatic Ping-Pong & Manual Arena Tuning & Manual by Developer & Automatic \\
+Operator Fusion & Automatic Dense+ReLU & Selective Quantized & None (Manual) & Rule-based \\
+Grammar Specification & Formal SLR(1) & FlatBuffers Schema & None (C API) & Relay Text \\
+Static RAM Overhead & \textbf{0 Bytes (Pure Buffers)} & 2--8 KB Arena Runtime & Minimal & 1--4 KB Structs \\
+Flash Runtime Code Size & \textbf{0 KB (No Runtime)} & 15--60 KB Interpreter & 5--15 KB Kernels & 10--30 KB Runtime \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+% =========================================================================
+% SECTION 3: DOMAIN-SPECIFIC LANGUAGE
+% =========================================================================
+
+\subsection{Architectural Trade-Off Analysis: Interpreter vs AOT vs Micro-Kernels}
+\label{sec:runtime_taxonomy}
+To rigorously position TMLC within the landscape of embedded deep learning deployment, Table~\ref{tab:runtime_comparison_extended} presents a comprehensive architectural comparison across four contemporary paradigms: interpreter-based runtimes (TFLite Micro), JIT/graph compilers (TVM/microTVM), optimized micro-kernel libraries (ARM CMSIS-NN), and specialized ahead-of-time domain compilers (TMLC).
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Architectural Taxonomy of Embedded Machine Learning Execution Paradigms}
+\label{tab:runtime_comparison_extended}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Architectural Attribute} & \textbf{TFLite Micro [1]} & \textbf{microTVM [3]} & \textbf{CMSIS-NN [4]} & \textbf{TMLC (This Work)} \\
+\midrule
+\textbf{Execution Paradigm}        & Bytecode Interpreter     & Ahead-of-Time C Gen   & Hand-tuned Kernels    & Specialized Pure AOT C99 \\
+\textbf{Runtime Engine Footprint}  & 15--45 KB Flash          & 5--15 KB Flash        & 0 KB (Library only)   & \textbf{0 KB (Pure C Source)} \\
+\textbf{Dynamic Memory (Heap)}     & Arena Allocation (SRAM)  & Static or Heap        & Caller-allocated      & \textbf{0 Bytes (Provably Zero)} \\
+\textbf{Working SRAM Strategy}     & Shared Tensor Arena      & Memory Pools          & Buffer pointers       & \textbf{2-Buffer Bipartite Ping-Pong} \\
+\textbf{Operator Fusion}           & Graph Rewrite Engine     & Relay Pattern Rewriter& Manual C composition  & \textbf{Algebraic Compound Kernels} \\
+\textbf{Formal Grammatical Base}   & FlatBuffers Serialization& Relay Functional IR   & C API function calls  & \textbf{SLR(1) Context-Free Grammar} \\
+\textbf{Quantization Scheme}       & Int8 Affine (Zero-Point) & Int8 / Int4 TensorIR  & Int8 / Int16 SIMD     & \textbf{Int8 Symmetric Per-Tensor} \\
+\textbf{Hardware Target Portability}& ARM, Xtensa, RISC-V     & Multi-architecture    & ARM Cortex-M Only     & \textbf{Any ANSI C99 Compiler} \\
+\textbf{External CRT Dependencies} & C++ Runtime, Libc        & Minimal Libc          & CMSIS Core headers    & \textbf{Standard Math Only (\texttt{expf})} \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+Interpreter runtimes like TensorFlow Lite Micro maintain an operational flatbuffer model parser in flash memory alongside an operator registration table. While this decouples model weights from executable code, it imposes substantial flash memory overhead and requires a large contiguous memory arena ($10$--$50$~KB) to allocate intermediate tensor buffers dynamically. In contrast, TMLC translates the neural network graph directly into hardcoded C99 for-loops with compile-time constant loop bounds, enabling the host compiler (GCC/Clang) to perform aggressive register allocation, induction variable elimination, and loop unrolling.
+
+\section{Domain-Specific Language Specification}
+\label{sec:dsl_spec}
+
+\subsection{Design Rationale for a Dedicated Modeling DSL}
+Modern deep learning frameworks define model topologies using imperative Python scripts (e.g., PyTorch \texttt{torch.nn.Module} or Keras \texttt{Sequential}) or bloated serialization formats such as ONNX and TensorFlow Lite FlatBuffers. 
+
+For resource-constrained embedded systems and compiler verification, these general-purpose representations introduce substantial liabilities:
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Syntactic and Semantic Ambiguity:} Python-based model specifications are Turing-complete and can execute arbitrary non-deterministic code, dynamic control flow, and unconstrained tensor mutations that prevent static ahead-of-time memory bounding.
+    \item \textbf{Serialization Overhead and Complexity:} Parsing Protocol Buffers or FlatBuffers requires multi-thousand-line parser runtimes, schema compilers, and complex binary deserialization routines that exceed the code memory limits of small microcontrollers.
+    \item \textbf{Auditing and Safety Verification:} Safety-critical systems require human-readable, deterministic model specifications that can be audited, version-controlled via standard textual diffs, and mathematically verified.
+\end{enumerate}
+
+To address these challenges, TMLC introduces \textbf{\texttt{.tml}}, a declarative, minimalist Domain-Specific Language (DSL) specifically engineered for feed-forward neural networks deployed on microcontrollers.
+
+\subsection{DSL Syntax and Structural Hierarchy}
+A valid \texttt{.tml} file defines a single named neural network model enclosed in curly braces. The structure consists of three mandatory components executed in strict sequential order:
+\begin{enumerate}
+    \item \textbf{Model Header and Declaration:} Declares the unique identifier of the network using the keyword \texttt{model} followed by an alphanumeric identifier (e.g., \texttt{model MNIST \{ ... \}}).
+    \item \textbf{Dimensional Boundary Declarations:}
+    \begin{itemize}
+        \item \texttt{input: <dim>;} Declares the dimensionality of the incoming raw input vector (e.g., $784$ for flattened $28 \times 28$ grayscale images).
+        \item \texttt{output: <dim>;} Declares the dimensionality of the final output prediction vector (e.g., $10$ for the class probabilities of digits $0$ through $9$).
+    \end{itemize}
+    \item \textbf{Layer Sequence Specification:} An ordered sequence of one or more layer statements specifying affine transformations and non-linear activation functions.
+\end{enumerate}
+
+\subsection{Supported Layer Primitives}
+TMLC natively supports three core layer primitives:
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Dense (Fully Connected) Layer:} Specified as:
+    \begin{equation}
+        \texttt{Dense(in\_dim, out\_dim, "weight\_path.npy", "bias\_path.npy");}
+    \end{equation}
+    where \texttt{in\_dim} and \texttt{out\_dim} are positive integers denoting input and output feature dimensions, and the double-quoted strings designate relative or absolute file paths to serialized NumPy binary arrays containing the weight matrix $W \in \mathbb{R}^{\text{in\_dim} \times \text{out\_dim}}$ and bias vector $b \in \mathbb{R}^{\text{out\_dim}}$.
+    \item \textbf{ReLU (Rectified Linear Unit) Activation:} Specified as \texttt{ReLU;} denoting the element-wise non-linear operator $f(x) = \max(0, x)$.
+    \item \textbf{Softmax Activation:} Specified as \texttt{Softmax;} denoting the normalized exponential probability distribution $\sigma(z)_i = \frac{e^{z_i}}{\sum_{j=1}^K e^{z_j}}$.
+\end{itemize}
+
+\subsection{Concrete Model Listings}
+Listing~\ref{lst:mnist_tml} illustrates the complete specification for the 3-layer deep neural network designed for MNIST handwritten digit recognition. Listing~\ref{lst:tiny_tml} presents a minimal 2-layer network used for sanity testing.
+
+\begin{lstlisting}[language=C, caption={Complete MNIST Specification (\texttt{examples/mnist.tml})}, label={lst:mnist_tml}, basicstyle=\ttfamily\footnotesize, frame=single, numbers=left]
+model MNIST {
+    input: 784;
+    output: 10;
+
+    Dense(784, 128, "weights/dense1_w.npy", "weights/dense1_b.npy");
+    ReLU;
+    Dense(128, 64, "weights/dense2_w.npy", "weights/dense2_b.npy");
+    ReLU;
+    Dense(64, 10, "weights/dense3_w.npy", "weights/dense3_b.npy");
+    Softmax;
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=C, caption={Minimal Test Network Specification (\texttt{examples/tiny.tml})}, label={lst:tiny_tml}, basicstyle=\ttfamily\footnotesize, frame=single, numbers=left]
+model Tiny {
+    input: 4;
+    output: 2;
+
+    Dense(4, 8, "weights/tiny_w1.npy", "weights/tiny_b1.npy");
+    ReLU;
+    Dense(8, 2, "weights/tiny_w2.npy", "weights/tiny_b2.npy");
+}
+\end{lstlisting}
+
+% =========================================================================
+% SECTION 4: FORMAL GRAMMAR AND SLR(1)
+% =========================================================================
+\section{Formal Grammar and SLR(1) Automaton}
+\label{sec:formal_grammar}
+
+Compiler correctness begins with grammatical rigor. Unlike ad-hoc hand-written recursive descent parsers that often embed subtle precedence ambiguities and ill-defined edge-case behaviors, TMLC is underpinned by a formally proven Simple LR(1) (SLR(1)) context-free grammar [5, 6].
+
+\subsection{Lexical Specification}
+The lexical analyzer processes the input character stream $c_1, c_2, \dots, c_n$ and emits a deterministic token stream. The lexical alphabet comprises 17 terminal tokens, formally defined in Table~\ref{tab:lexical_tokens}. Whitespace characters and single-line comments introduced by \texttt{//} or \texttt{\#} are discarded by the scanner except for tracking source coordinate locations (line and column numbers).
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Lexical Token Specification for TMLC}
+\label{tab:lexical_tokens}
+\begin{tabular}{lll}
+\toprule
+\textbf{Token Name} & \textbf{Regular Expression / Pattern} & \textbf{Semantic Description} \\
+\midrule
+\texttt{MODEL}      & \texttt{model}                          & Model declaration keyword \\
+\texttt{INPUT}      & \texttt{input}                          & Input dimension keyword \\
+\texttt{OUTPUT}     & \texttt{output}                         & Output dimension keyword \\
+\texttt{DENSE}      & \texttt{Dense}                          & Fully-connected layer keyword \\
+\texttt{RELU}       & \texttt{ReLU}                           & Rectified linear unit keyword \\
+\texttt{SOFTMAX}    & \texttt{Softmax}                        & Softmax activation keyword \\
+\texttt{IDENT}      & \texttt{[A-Za-z\_][A-Za-z0-9\_]*}       & Model identifier name \\
+\texttt{INT}        & \texttt{[0-9]+}                         & Unsigned decimal integer \\
+\texttt{STRING}     & \texttt{"([\textasciicircum"\textbackslash n\textbackslash r\textbackslash\textbackslash]|\textbackslash\textbackslash.)*"} & Double-quoted string literal \\
+\texttt{LBRACE}     & \texttt{\{}                             & Left curly brace block open \\
+\texttt{RBRACE}     & \texttt{\}}                             & Right curly brace block close \\
+\texttt{LPAREN}     & \texttt{(}                             & Left parenthesis \\
+\texttt{RPAREN}     & \texttt{)}                             & Right parenthesis \\
+\texttt{COLON}      & \texttt{:}                              & Key-value delimiter \\
+\texttt{SEMICOLON}  & \texttt{;}                              & Statement terminator \\
+\texttt{COMMA}      & \texttt{,}                              & Parameter list delimiter \\
+\texttt{EOF}        & End-of-Stream Marker                    & Input stream termination \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Context-Free Grammar (CFG) Productions}
+The syntax of \texttt{.tml} is governed by a context-free grammar $G = (V, \Sigma, R, S')$, where:
+\begin{itemize}
+    \item $V$ is the set of 9 non-terminals:
+    \begin{align*}
+        V = \{ &\text{Start}, \text{Model}, \text{ModelBody}, \text{InputDecl}, \text{OutputDecl}, \\
+               &\text{LayerList}, \text{Layer}, \text{DenseLayer}, \text{ActivationLayer} \}
+    \end{align*}
+    \item $\Sigma$ is the set of 17 terminal tokens.
+    \item $S' = \text{Start}$ is the augmented start symbol.
+    \item $R$ is the set of 12 production rules enumerated in Table~\ref{tab:cfg_productions}.
+\end{itemize}
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Numbered Context-Free Grammar Production Rules}
+\label{tab:cfg_productions}
+\begin{tabular}{cll}
+\toprule
+\textbf{Index} & \textbf{Left-Hand Side} & \textbf{Right-Hand Side Productions} \\
+\midrule
+$0$  & $\text{Start}$           & $\rightarrow \text{Model}$ \\
+$1$  & $\text{Model}$           & $\rightarrow \texttt{MODEL} \quad \texttt{IDENT} \quad \texttt{LBRACE} \quad \text{ModelBody} \quad \texttt{RBRACE}$ \\
+$2$  & $\text{ModelBody}$       & $\rightarrow \text{InputDecl} \quad \text{OutputDecl} \quad \text{LayerList}$ \\
+$3$  & $\text{InputDecl}$       & $\rightarrow \texttt{INPUT} \quad \texttt{COLON} \quad \texttt{INT} \quad \texttt{SEMICOLON}$ \\
+$4$  & $\text{OutputDecl}$      & $\rightarrow \texttt{OUTPUT} \quad \texttt{COLON} \quad \texttt{INT} \quad \texttt{SEMICOLON}$ \\
+$5$  & $\text{LayerList}$       & $\rightarrow \text{LayerList} \quad \text{Layer}$ \\
+$6$  & $\text{LayerList}$       & $\rightarrow \text{Layer}$ \\
+$7$  & $\text{Layer}$           & $\rightarrow \text{DenseLayer}$ \\
+$8$  & $\text{Layer}$           & $\rightarrow \text{ActivationLayer}$ \\
+$9$  & $\text{DenseLayer}$      & $\rightarrow \texttt{DENSE} \ \texttt{LPAREN} \ \texttt{INT} \ \texttt{COMMA} \ \texttt{INT} \ \texttt{COMMA}$ \\
+     &                          & $\phantom{\rightarrow} \quad \texttt{STRING} \ \texttt{COMMA} \ \texttt{STRING} \ \texttt{RPAREN} \ \texttt{SEMICOLON}$ \\
+$10$ & $\text{ActivationLayer}$ & $\rightarrow \texttt{RELU} \quad \texttt{SEMICOLON}$ \\
+$11$ & $\text{ActivationLayer}$ & $\rightarrow \texttt{SOFTMAX} \quad \texttt{SEMICOLON}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{FIRST and FOLLOW Sets}
+In SLR(1) parsing, lookahead reduction decisions depend on the $\text{FOLLOW}$ sets of non-terminals:
+\begin{align}
+    \text{FIRST}(\alpha) &= \{ t \in \Sigma \mid \alpha \Rightarrow^* t\beta \} \cup \{ \epsilon \text{ if } \alpha \Rightarrow^* \epsilon \} \\
+    \text{FOLLOW}(A)    &= \{ t \in \Sigma \cup \{\texttt{EOF}\} \mid S' \Rightarrow^* \alpha A t \beta \}
+\end{align}
+
+Because the grammar contains no empty ($\epsilon$) productions, the derivations are straightforward:
+\begin{itemize}[leftmargin=*]
+    \item $\text{FIRST}(\text{ActivationLayer}) = \{\texttt{RELU}, \texttt{SOFTMAX}\}$
+    \item $\text{FIRST}(\text{DenseLayer}) = \{\texttt{DENSE}\}$
+    \item $\text{FIRST}(\text{Layer}) = \text{FIRST}(\text{LayerList}) = \{\texttt{DENSE}, \texttt{RELU}, \texttt{SOFTMAX}\}$
+    \item $\text{FIRST}(\text{OutputDecl}) = \{\texttt{OUTPUT}\}$, $\text{FIRST}(\text{InputDecl}) = \text{FIRST}(\text{ModelBody}) = \{\texttt{INPUT}\}$
+    \item $\text{FIRST}(\text{Model}) = \text{FIRST}(\text{Start}) = \{\texttt{MODEL}\}$
+\end{itemize}
+
+For FOLLOW sets:
+\begin{itemize}[leftmargin=*]
+    \item $\text{FOLLOW}(\text{Start}) = \text{FOLLOW}(\text{Model}) = \{\texttt{EOF}\}$
+    \item $\text{FOLLOW}(\text{ModelBody}) = \{\texttt{RBRACE}\}$
+    \item $\text{FOLLOW}(\text{InputDecl}) = \text{FIRST}(\text{OutputDecl}) = \{\texttt{OUTPUT}\}$
+    \item $\text{FOLLOW}(\text{OutputDecl}) = \text{FIRST}(\text{LayerList}) = \{\texttt{DENSE}, \texttt{RELU}, \texttt{SOFTMAX}\}$
+    \item $\text{FOLLOW}(\text{LayerList}) = \text{FOLLOW}(\text{Layer}) = \text{FOLLOW}(\text{DenseLayer})$ \\
+    $\quad = \text{FOLLOW}(\text{ActivationLayer}) = \{\texttt{DENSE}, \texttt{RELU}, \texttt{SOFTMAX}, \texttt{RBRACE}\}$.
+\end{itemize}
+
+Table~\ref{tab:first_follow_summary} summarizes the complete FIRST and FOLLOW sets across all non-terminals.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Comprehensive FIRST and FOLLOW Sets for Grammar $G$}
+\label{tab:first_follow_summary}
+\begin{tabular}{lll}
+\toprule
+\textbf{Non-Terminal ($A$)} & $\mathbf{\text{FIRST}(A)}$ & $\mathbf{\text{FOLLOW}(A)}$ \\
+\midrule
+$\text{Start}$           & $\{\texttt{MODEL}\}$                      & $\{\texttt{EOF}\}$ \\
+$\text{Model}$           & $\{\texttt{MODEL}\}$                      & $\{\texttt{EOF}\}$ \\
+$\text{ModelBody}$       & $\{\texttt{INPUT}\}$                      & $\{\texttt{RBRACE}\}$ \\
+$\text{InputDecl}$       & $\{\texttt{INPUT}\}$                      & $\{\texttt{OUTPUT}\}$ \\
+$\text{OutputDecl}$      & $\{\texttt{OUTPUT}\}$                     & $\{\texttt{DENSE}, \texttt{RELU}, \texttt{SOFTMAX}\}$ \\
+$\text{LayerList}$       & $\{\texttt{DENSE}, \texttt{RELU}, \texttt{SOFTMAX}\}$ & $\{\texttt{DENSE}, \texttt{RELU}, \texttt{SOFTMAX}, \texttt{RBRACE}\}$ \\
+$\text{Layer}$           & $\{\texttt{DENSE}, \texttt{RELU}, \texttt{SOFTMAX}\}$ & $\{\texttt{DENSE}, \texttt{RELU}, \texttt{SOFTMAX}, \texttt{RBRACE}\}$ \\
+$\text{DenseLayer}$      & $\{\texttt{DENSE}\}$                      & $\{\texttt{DENSE}, \texttt{RELU}, \texttt{SOFTMAX}, \texttt{RBRACE}\}$ \\
+$\text{ActivationLayer}$ & $\{\texttt{RELU}, \texttt{SOFTMAX}\}$      & $\{\texttt{DENSE}, \texttt{RELU}, \texttt{SOFTMAX}, \texttt{RBRACE}\}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.88\linewidth]{slr1_parser_architecture.pdf}
+    \caption{TMLC Deterministic SLR(1) Compiler Frontend Architecture: Lexical analysis, 37-state canonical LR(0) collection, conflict-free shift-reduce driver, and syntax-directed AST synthesis.}
+    \label{fig:slr1_parser_architecture}
+\end{figure}
+
+
+\subsection{Detailed LR(0) Canonical Collection of Sets of Items}
+\label{sec:lr0_canonical_items}
+To construct the SLR(1) parsing table, TMLC builds the canonical collection of LR(0) item sets $\mathcal{C} = \{I_0, I_1, \dots, I_{36}\}$ by evaluating the transitive closure under the $\text{CLOSURE}$ and $\text{GOTO}$ operations. An LR(0) item is a production rule containing a marker ($\cdot$) indicating the parser's current position:
+\begin{equation}
+    \text{CLOSURE}(I) = I \cup \{ [B \rightarrow \cdot \gamma] \mid [A \rightarrow \alpha \cdot B \beta] \in \text{CLOSURE}(I) \land (B \rightarrow \gamma) \in R \}
+\end{equation}
+
+The parser initializes in state $I_0 = \text{CLOSURE}(\{[\text{Start} \rightarrow \cdot \text{Model}]\})$, yielding:
+\begin{align*}
+    I_0 = \{ &[\text{Start} \rightarrow \cdot \text{Model}], \quad [\text{Model} \rightarrow \cdot \texttt{MODEL} \ \texttt{IDENT} \ \texttt{LBRACE} \ \text{ModelBody} \ \texttt{RBRACE}] \}
+\end{align*}
+Subsequent state transitions are governed by the deterministic transition function:
+\begin{equation}
+    \text{GOTO}(I, X) = \text{CLOSURE}(\{ [A \rightarrow \alpha X \cdot \beta] \mid [A \rightarrow \alpha \cdot X \beta] \in I \})
+\end{equation}
+
+Table~\ref{tab:lr0_states_sample} summarizes the core kernel items across the canonical collection.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Canonical LR(0) Automaton Item Sets for TMLC (Selected Key States)}
+\label{tab:lr0_states_sample}
+\begin{tabular}{cp{6.8cm}p{4.8cm}}
+\toprule
+\textbf{State ($I_k$)} & \textbf{Kernel Items} & \textbf{Outbound GOTO / Action Transitions} \\
+\midrule
+$I_0$  & $[\text{Start} \rightarrow \cdot \text{Model}]$ & on \texttt{MODEL} $\rightarrow I_1$, on $\text{Model} \rightarrow I_2$ \\
+$I_1$  & $[\text{Model} \rightarrow \texttt{MODEL} \cdot \texttt{IDENT} \dots]$ & on \texttt{IDENT} $\rightarrow I_3$ \\
+$I_2$  & $[\text{Start} \rightarrow \text{Model} \cdot]$ & on \texttt{EOF} $\rightarrow$ \textbf{ACCEPT} \\
+$I_3$  & $[\text{Model} \rightarrow \texttt{MODEL} \ \texttt{IDENT} \cdot \texttt{LBRACE} \dots]$ & on \texttt{LBRACE} $\rightarrow I_4$ \\
+$I_4$  & $[\text{Model} \rightarrow \dots \texttt{LBRACE} \cdot \text{ModelBody} \dots]$ & on \texttt{INPUT} $\rightarrow I_5$, on $\text{InputDecl} \rightarrow I_6$, on $\text{ModelBody} \rightarrow I_7$ \\
+$I_5$  & $[\text{InputDecl} \rightarrow \texttt{INPUT} \cdot \texttt{COLON} \dots]$ & on \texttt{COLON} $\rightarrow I_8$ \\
+$I_6$  & $[\text{ModelBody} \rightarrow \text{InputDecl} \cdot \text{OutputDecl} \dots]$ & on \texttt{OUTPUT} $\rightarrow I_9$, on $\text{OutputDecl} \rightarrow I_{10}$ \\
+$I_7$  & $[\text{Model} \rightarrow \dots \text{ModelBody} \cdot \texttt{RBRACE}]$ & on \texttt{RBRACE} $\rightarrow I_{11}$ \\
+$I_{11}$ & $[\text{Model} \rightarrow \dots \texttt{RBRACE} \cdot]$ & on $\text{FOLLOW}(\text{Model}) \rightarrow$ \textbf{Reduce Rule 1} \\
+$I_{15}$ & $[\text{DenseLayer} \rightarrow \texttt{DENSE} \cdot \texttt{LPAREN} \dots]$ & on \texttt{LPAREN} $\rightarrow I_{20}$ \\
+$I_{16}$ & $[\text{Layer} \rightarrow \text{DenseLayer} \cdot]$ & on $\text{FOLLOW}(\text{Layer}) \rightarrow$ \textbf{Reduce Rule 7} \\
+$I_{18}$ & $[\text{ModelBody} \rightarrow \dots \text{LayerList} \cdot]$ & on \texttt{RBRACE} $\rightarrow$ \textbf{Reduce Rule 2}, on $\text{Layer} \rightarrow I_{24}$ \\
+$I_{24}$ & $[\text{LayerList} \rightarrow \text{LayerList} \ \text{Layer} \cdot]$ & on $\text{FOLLOW}(\text{LayerList}) \rightarrow$ \textbf{Reduce Rule 5} \\
+$I_{36}$ & $[\text{DenseLayer} \rightarrow \dots \texttt{SEMICOLON} \cdot]$ & on $\text{FOLLOW}(\text{DenseLayer}) \rightarrow$ \textbf{Reduce Rule 9} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Syntax-Directed Translation and AST Construction}
+\label{sec:syntax_directed_translation}
+As reduction steps are executed by the SLR(1) driver, semantic attributes are synthesized bottom-up:
+\begin{enumerate}
+    \item \textbf{Rule 3 ($\text{InputDecl} \rightarrow \texttt{INPUT} \ \texttt{:} \ \texttt{INT} \ \texttt{;}$):} Synthesizes an integer attribute $D_{\text{in}} = \text{val}(\texttt{INT})$.
+    \item \textbf{Rule 4 ($\text{OutputDecl} \rightarrow \texttt{OUTPUT} \ \texttt{:} \ \texttt{INT} \ \texttt{;}$):} Synthesizes an integer attribute $D_{\text{out}} = \text{val}(\texttt{INT})$.
+    \item \textbf{Rule 9 ($\text{DenseLayer} \rightarrow \texttt{DENSE} \ (\dots)$):} Instantiates a typed \texttt{DenseNode}$(d_{\text{in}}, d_{\text{out}}, w_{\text{path}}, b_{\text{path}})$ preserving source coordinates for error tracing.
+    \item \textbf{Rules 10--11 ($\text{ActivationLayer} \rightarrow \texttt{RELU} \mid \texttt{SOFTMAX}$):} Instantiates \texttt{ReLUNode} or \texttt{SoftmaxNode}.
+    \item \textbf{Rule 1 ($\text{Model} \rightarrow \dots$):} Synthesizes the root \texttt{ModelNode} containing the ordered sequence of layer nodes.
+\end{enumerate}
+
+\subsection{Parser Determinism and Conflict Analysis}
+An SLR(1) parsing table can encounter two types of ambiguities:
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Shift/Reduce (S/R) Conflict:} The parser cannot decide whether to shift the next token or reduce using a completed production rule.
+    \item \textbf{Reduce/Reduce (R/R) Conflict:} Multiple distinct rules complete at the same time on the same lookahead token.
+\end{itemize}
+
+When TMLC builds the SLR(1) parsing table across all 37 canonical states:
+\begin{itemize}[leftmargin=*]
+    \item \textbf{25 Shift-Only States:} These states are scanning unconsumed tokens and contain no completed reduction items, precluding any conflicts.
+    \item \textbf{11 Reduction-Only States:} In these states, a specific rule is completed (such as finishing an activation or layer). Each contains exactly one reduction action and zero shift transitions.
+    \item \textbf{1 Boundary State (State 18):} State 18 occurs after parsing a layer declaration. The parser can either shift to read another layer (\texttt{Dense}, \texttt{ReLU}, \texttt{Softmax}) or reduce the model body upon seeing the closing brace (\texttt{\}}). Because the reduction lookahead is strictly $\{\texttt{\}}\}$ and the shift tokens are $\{\texttt{Dense}, \texttt{ReLU}, \texttt{Softmax}\}$, their intersection is empty:
+    $$\{\texttt{\}}\} \cap \{\texttt{Dense}, \texttt{ReLU}, \texttt{Softmax}\} = \emptyset$$
+    There is no overlap, so the decision is completely deterministic.
+\end{itemize}
+
+As verified by running \texttt{python main.py tables}, the grammar yields \textbf{0 Shift/Reduce conflicts and 0 Reduce/Reduce conflicts}, confirming that it parses deterministically in linear $O(n)$ time.
+
+% =========================================================================
+% SECTION 5: LEXICAL AND SYNTACTIC ANALYSIS
+% =========================================================================
+\section{Lexical and Syntactic Analysis Engine}
+\label{sec:lex_parse}
+
+The frontend of TMLC transforms the raw character sequence of a \texttt{.tml} file into a strongly-typed Abstract Syntax Tree (AST). This pipeline comprises a regex-based deterministic scanner and an explicit table-driven SLR(1) shift-reduce automaton.
+
+\subsection{Lexer Architecture and Implementation}
+The lexical scanner is implemented in \texttt{tmlc.lexer.lex}. Rather than relying on external lexer generators, TMLC utilizes a streamlined regex-based deterministic tokenizer:
+\begin{enumerate}
+    \item \textbf{Coordinate Tracking:} A 2-tuple \texttt{(line, col)} is tracked monotonically. Newline characters (\texttt{\textbackslash n}) increment the line counter and reset the column counter to 1; all other characters advance the column offset by their UTF-8 byte length.
+    \item \textbf{Whitespace and Comment Stripping:} Whitespace runs and comments (prefixed with \texttt{//} or \texttt{\#}) match non-emitting scanner patterns that update coordinate positions without emitting tokens.
+    \item \textbf{String Literal Unescaping:} Double-quoted string literals matching regex patterns of the form \texttt{"(\textbackslash\textbackslash.|[\textasciicircum"\textbackslash\textbackslash])*"}\ are stripped of delimiting quotes and processed through standard escape sequence decoding.
+    \item \textbf{Integer Parsing:} Sequences of digits matching \texttt{[0-9]+} are converted to 64-bit signed integers.
+    \item \textbf{Stream Termination:} Upon reaching the end of the input buffer, an explicit \texttt{EOF} token is emitted with the final coordinate.
+\end{enumerate}
+
+\subsubsection{Lexical Diagnostic Error Handling}
+The lexer enforces zero tolerance for lexical corruption:
+\begin{itemize}
+    \item \textbf{E001 (Invalid Character):} Triggered when an unrecognized byte is encountered that fails to match any terminal pattern (e.g., encountering a stray \texttt{@} character).
+    \item \textbf{E002 (Unterminated String Literal):} Triggered when a quote character \texttt{"} is opened but the source file reaches an unescaped newline or end-of-file before encountering the matching closing quote.
+\end{itemize}
+
+\subsection{SLR(1) Table-Driven Shift-Reduce Parser}
+The parser module (\texttt{tmlc.parser.parser}) implements an explicit, non-recursive, stack-based shift-reduce automaton. The engine maintains two synchronized stacks:
+\begin{enumerate}
+    \item \textbf{State Stack ($\mathcal{S}$):} Initialized to $[0]$. Stores the sequence of LR(0) automaton state indices.
+    \item \textbf{Symbol / Value Stack ($\mathcal{V}$):} Initialized to $[\emptyset]$. Stores semantic values associated with shifted tokens or reduced non-terminal AST subtrees.
+\end{enumerate}
+
+At each step, given top state $s = \mathcal{S}.\text{top}()$ and lookahead token $a = \text{peek}()$:
+\begin{itemize}
+    \item \textbf{Shift Action ($s_k$):} If $\text{Action}[s, a] = \text{Shift}(k)$, the parser pushes state $k$ onto $\mathcal{S}$, pushes the token semantic value onto $\mathcal{V}$, and advances the input stream.
+    \item \textbf{Reduce Action ($r_p$):} If $\text{Action}[s, a] = \text{Reduce}(p)$ for production $A \rightarrow \beta$ (with $|\beta| = m$), the top $m$ states and semantic values are popped, semantic actions construct the AST node representing $A$, and the new state $s_{\text{goto}} = \text{Goto}[\mathcal{S}.\text{top}(), A]$ is pushed onto $\mathcal{S}$.
+    \item \textbf{Accept Action:} If $\text{Action}[s, a] = \text{Accept}$, parsing succeeds, and the single root AST node on $\mathcal{V}$ is returned.
+    \item \textbf{Syntax Error (E101):} If $\text{Action}[s, a] = \text{Error}$, the parser halts and raises diagnostic code \textbf{E101}, displaying the unexpected token, coordinate location, and the set of valid expected tokens.
+\end{itemize}
+
+% =========================================================================
+% SECTION 6: SEMANTIC ANALYSIS AND TENSOR VERIFICATION
+% =========================================================================
+\section{Semantic Analysis and Tensor Verification}
+\label{sec:semantic}
+
+Syntactic correctness guarantees that a \texttt{.tml} file conforms to the grammatical rules of the language, but it cannot ensure mathematical validity or runtime safety. Semantic analysis bridges syntax to execution by enforcing structural integrity, shape compatibility, and floating-point safety.
+
+\subsection{Semantic Checking Engine}
+The semantic analyzer (\texttt{tmlc.semantic.analyzer}) executes multi-pass validation directly over the AST produced by the parser:
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Positive Dimensions (E202):} Microcontroller tensor buffers require positive sizes. The analyzer asserts that all declared input, output, and layer dimensions are strictly greater than zero ($> 0$).
+    \item \textbf{Layer Dimension Continuity (E201):} In a valid feed-forward network, each layer's output dimension must match the next layer's input dimension ($D_{\text{out}}^{(l-1)} = D_{\text{in}}^{(l)}$). Any mismatch triggers error \textbf{E201}.
+    \item \textbf{Structural Constraints (E203, E204):} The analyzer checks that the model contains at least one Dense layer (E204) and that the output dimension of the final Dense layer matches the model's top-level \texttt{output:} declaration (E203).
+\end{itemize}
+
+\subsection{Binary Weight Tensor Loader and Numerical Sanitation}
+The parameter loader (\texttt{tmlc.loader.weights}) ingests the binary weight matrices and bias vectors referenced in \texttt{Dense} declarations:
+\begin{itemize}[leftmargin=*]
+    \item \textbf{NumPy Binary Format (\texttt{.npy}):} TMLC parses NumPy \texttt{.npy} files, validating magic headers, little-endian float32 data types, and shape metadata.
+    \item \textbf{Weight Shape Validation (E301, E302, E303):} Verifies that weight and bias files exist (E301), that weight matrices match shape $(D_{\text{in}}, D_{\text{out}})$ (E302), and that bias vectors match shape $(D_{\text{out}},)$ (E303).
+    \item \textbf{Floating-Point Sanitation (E304):} Microcontrollers lacking floating-point exception traps can silently propagate invalid floats. TMLC scans every float in loaded arrays using \texttt{np.isnan} and \texttt{np.isinf}; if any $\text{NaN}$, $+\infty$, or $-\infty$ is found, compilation halts with error \textbf{E304}.
+\end{itemize}
+
+% =========================================================================
+% SECTION 7: INTERMEDIATE REPRESENTATION AND OPERATOR FUSION
+% =========================================================================
+\section{Intermediate Representation and Operator Fusion}
+\label{sec:ir_opt}
+
+Following semantic validation, TMLC lowers the Abstract Syntax Tree into a low-level, linear Intermediate Representation (IR).
+
+\subsection{Linear Operational IR Design}
+In desktop deep learning compilers, computational graphs are modeled as complex Directed Acyclic Graphs (DAGs) or Static Single Assignment (SSA) functional forms. For microcontroller feed-forward neural networks, however, computational flow is strictly sequential. TMLC therefore adopts a \textbf{Linear Operational IR} consisting of typed operational instructions: \texttt{INPUT}, \texttt{DENSE}, \texttt{RELU}, \texttt{SOFTMAX}, \texttt{DENSE\_RELU}, and \texttt{OUTPUT}.
+
+\subsection{Dense+ReLU Operator Fusion}
+On microcontroller architectures, memory throughput is severely restricted. Every round-trip to internal SRAM incurs bus arbitration delays, memory controller access latency, and energy dissipation.
+
+In an unoptimized execution pipeline, computing a Dense layer followed by a ReLU activation requires two distinct passes:
+\begin{enumerate}
+    \item \textbf{Pass 1 (Dense):} The processor computes $z = x W + b \in \mathbb{R}^{D_{\text{out}}}$ and writes all $D_{\text{out}}$ floating-point values back into SRAM.
+    \item \textbf{Pass 2 (ReLU):} The processor reads all $D_{\text{out}}$ floats from SRAM, clamps negative values to $0$, and writes the rectified results back into SRAM.
+\end{enumerate}
+
+TMLC implements an algebraic rewrite pass (\texttt{tmlc.optimizer.fuse}) that collapses the affine linear transformation and non-linear activation into a single compound kernel:
+\begin{equation}
+    y_j = \max\left(0, \ b_j + \sum_{i=1}^{D_{\text{in}}} x_i W_{i, j}\right) \quad \forall j \in \{1, \dots, D_{\text{out}}\}
+\end{equation}
+
+Because the activation function is applied immediately to the scalar accumulator in the CPU register before writing the result to memory, intermediate pre-activation values are never materialized in SRAM, reducing the IR from 8 operations to 6 operations for MNIST.
+
+% =========================================================================
+% SECTION 8: STATIC MEMORY PLANNING
+% =========================================================================
+
+\subsection{Formal Operational Semantics of TMLC Linear IR}
+\label{sec:ir_semantics}
+The Linear Operational IR generated by TMLC is formalized through a small-step operational semantics. Let a machine configuration be a pair $\langle c, \sigma \rangle$, where $c$ represents the remaining instruction stream and $\sigma = (\mu, \rho)$ encapsulates the memory store $\mu : \text{BufferId} \to \mathbb{R}^k$ and the parameter environment $\rho : \text{LayerId} \to (\mathbb{R}^{M \times N} \times \mathbb{R}^N)$.
+
+We define the operational transitions $\langle c, \sigma \rangle \rightarrow \langle c', \sigma' \rangle$ through formal inference rules:
+
+\begin{equation}
+\frac{c = \texttt{DENSE}(D_{\text{in}}, D_{\text{out}}, W, b) \quad x = \mu(\text{src}) \quad y = x W + b}{\langle c :: \text{rest}, (\mu, \rho) \rangle \rightarrow \langle \text{rest}, (\mu[\text{dst} \mapsto y], \rho) \rangle} \quad \textsc{[E-Dense]}
+\end{equation}
+
+\begin{equation}
+\frac{c = \texttt{RELU}(D) \quad x = \mu(\text{src}) \quad y_i = \max(0.0, x_i)}{\langle c :: \text{rest}, (\mu, \rho) \rangle \rightarrow \langle \text{rest}, (\mu[\text{dst} \mapsto y], \rho) \rangle} \quad \textsc{[E-ReLU]}
+\end{equation}
+
+\begin{equation}
+\frac{c = \texttt{DENSE\_RELU}(D_{\text{in}}, D_{\text{out}}, W, b) \quad x = \mu(\text{src}) \quad y_j = \max\left(0.0, \sum_{i=1}^{D_{\text{in}}} x_i W_{i,j} + b_j\right)}{\langle c :: \text{rest}, (\mu, \rho) \rangle \rightarrow \langle \text{rest}, (\mu[\text{dst} \mapsto y], \rho) \rangle} \quad \textsc{[E-DenseReLU]}
+\end{equation}
+
+\begin{equation}
+\frac{c = \texttt{SOFTMAX}(D) \quad x = \mu(\text{src}) \quad m = \max_k x_k \quad y_i = \frac{e^{x_i - m}}{\sum_{j=1}^D e^{x_j - m}}}{\langle c :: \text{rest}, (\mu, \rho) \rangle \rightarrow \langle \text{rest}, (\mu[\text{dst} \mapsto y], \rho) \rangle} \quad \textsc{[E-Softmax]}
+\end{equation}
+
+\subsection{Formal Proof of Dense+ReLU Fusion Equivalence and Memory Reduction}
+\label{sec:fusion_proof}
+
+\begin{theorem}[Semantic Preservation of Operator Fusion]
+For any input activation tensor $x \in \mathbb{R}^{D_{\text{in}}}$, weight matrix $W \in \mathbb{R}^{D_{\text{in}} \times D_{\text{out}}}$, and bias vector $b \in \mathbb{R}^{D_{\text{out}}}$, the compound fused operation $\llbracket \texttt{DENSE\_RELU} \rrbracket(x, W, b)$ produces an output mathematically identical to the sequential composition $\llbracket \texttt{RELU} \rrbracket(\llbracket \texttt{DENSE} \rrbracket(x, W, b))$ under IEEE 754 arithmetic.
+\end{theorem}
+
+\begin{proof}
+Let $z = \llbracket \texttt{DENSE} \rrbracket(x, W, b) \in \mathbb{R}^{D_{\text{out}}}$. By definition:
+\begin{equation}
+z_j = b_j + \sum_{i=1}^{D_{\text{in}}} x_i W_{i,j} \quad \forall j \in \{1, \dots, D_{\text{out}}\}
+\end{equation}
+Applying the non-linear activation operator $\llbracket \texttt{RELU} \rrbracket$ to $z$ yields:
+\begin{equation}
+y_j = \max(0.0, z_j) = \max\left(0.0, \ b_j + \sum_{i=1}^{D_{\text{in}}} x_i W_{i,j}\right)
+\end{equation}
+In the fused kernel $\texttt{DENSE\_RELU}$, the scalar accumulator $s_j = \sum_{i=1}^{D_{\text{in}}} x_i W_{i,j} + b_j$ is evaluated directly within an internal CPU register $R_{\text{acc}}$. The unary condition $(s_j > 0.0) \ ? \ s_j : 0.0$ is evaluated before executing the memory write instruction. Because floating-point addition and multiplication operations are identical in both formulations, no rounding or precision discrepancy occurs:
+\begin{equation}
+\llbracket \texttt{DENSE\_RELU} \rrbracket(x, W, b) \equiv \llbracket \texttt{RELU} \rrbracket(\llbracket \texttt{DENSE} \rrbracket(x, W, b))
+\end{equation}
+\end{proof}
+
+\begin{theorem}[SRAM Transaction Invariant]
+For an intermediate layer with dimension $D_{\text{out}}$, operator fusion eliminates exactly $2 \times D_{\text{out}} \times 4$ bytes of SRAM memory bus transactions per inference pass.
+\end{theorem}
+
+\begin{proof}
+In an unfused implementation, the processor must execute:
+\begin{enumerate}
+    \item $D_{\text{out}}$ floating-point store instructions writing $z \in \mathbb{R}^{D_{\text{out}}}$ to SRAM: $4 D_{\text{out}}$ bytes.
+    \item $D_{\text{out}}$ floating-point load instructions fetching $z$ from SRAM for ReLU evaluation: $4 D_{\text{out}}$ bytes.
+\end{enumerate}
+In the fused kernel, the intermediate tensor $z$ is never materialized in memory. Thus, exactly $8 D_{\text{out}}$ bytes of memory traffic are eliminated per fused layer. For MNIST Layer 1 ($D_{\text{out}}=128$) and Layer 2 ($D_{\text{out}}=64$), operator fusion saves:
+\begin{equation}
+\Delta M = 8 \times 128 + 8 \times 64 = 1,024 + 512 = 1,536 \text{ Bytes of memory bus traffic per inference}.
+\end{equation}
+\end{proof}
+
+\section{Static Memory Planning and Buffer Allocation}
+\label{sec:memory_planning}
+
+In bare-metal microcontroller systems, memory architecture is strictly segmented between non-volatile Flash storage (ROM) and volatile Static RAM (SRAM).
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.92\linewidth]{memory_breakdown.pdf}
+    \caption{Static Memory Footprint Breakdown on Target Microcontroller: Flash (ROM) stores immutable model weights and program code; SRAM (RAM) is restricted to exactly two static working buffers totaling 768 bytes.}
+    \label{fig:memory_breakdown}
+\end{figure}
+
+\subsection{The Perils of Dynamic Heap Allocation}
+Standard desktop deep learning libraries allocate tensors on demand via \texttt{malloc()}. In mission-critical embedded systems, dynamic heap allocation introduces fatal vulnerabilities:
+\begin{enumerate}
+    \item \textbf{Heap Fragmentation:} Repeated allocation and deallocation creates memory fragmentation, eventually causing allocation requests to fail even when total free memory appears sufficient.
+    \item \textbf{Non-Deterministic Latency:} The execution duration of \texttt{malloc} depends on heap free-list fragmentation, violating hard real-time latency deadlines.
+    \item \textbf{Catastrophic Hard Faults:} Bare-metal firmware lacks virtual memory swap space; an out-of-memory condition triggers immediate CPU hard faults or silent data corruption.
+\end{enumerate}
+
+TMLC completely eradicates this failure mode by guaranteeing \textbf{provable zero dynamic allocation}: no call to \texttt{malloc}, \texttt{calloc}, \texttt{realloc}, or \texttt{free} is ever emitted.
+
+\subsection{Two-Buffer Ping-Pong Memory Allocation}
+In a sequential feed-forward neural network, layer $l$ only requires the output activations of layer $l-1$ as its input. Consequently, only two activation tensors ever need to exist in memory at any instant during forward inference: the layer being read, and the layer being written.
+
+Instead of allocating a separate array for every layer (which wastes precious RAM) or relying on dynamic heap allocation (\texttt{malloc}), TMLC implements a simple static \textbf{Ping-Pong Buffer} scheme (\texttt{tmlc.optimizer.buffers}):
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Buffer A (Primary):} Statically sized to fit the largest intermediate layer (128 floats = 512 bytes for MNIST).
+    \item \textbf{Buffer B (Secondary):} Statically sized to fit the second-largest intermediate layer (64 floats = 256 bytes for MNIST).
+\end{itemize}
+
+During execution, operations alternate back and forth between Buffer A and Buffer B:
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Layer 1 (Dense+ReLU):} Reads from \texttt{input}, writes into \texttt{buf\_a} (128 floats).
+    \item \textbf{Layer 2 (Dense+ReLU):} Reads from \texttt{buf\_a}, writes into \texttt{buf\_b} (64 floats).
+    \item \textbf{Layer 3 (Dense):} Reads from \texttt{buf\_b}, writes back into \texttt{buf\_a} (10 floats).
+    \item \textbf{Layer 4 (Softmax):} Executed in-place directly on \texttt{buf\_a}.
+    \item \textbf{Output Copy:} Copies the final 10 floats from \texttt{buf\_a} to the caller's \texttt{output} buffer.
+\end{itemize}
+
+This alternating strategy guarantees that peak working SRAM is strictly capped at **768 bytes** ($512 + 256$), requiring **zero dynamic memory allocation** and completely eliminating memory fragmentation.
+
+Execution alternates between these two static global buffers in a strict ping-pong sequence:
+\begin{align}
+    \text{Layer 1 (Dense+ReLU)} &: \quad \text{input} \longrightarrow \texttt{buf\_a} \quad (\mathcal{B}_0, \ 128 \text{ floats}) \\
+    \text{Layer 2 (Dense+ReLU)} &: \quad \texttt{buf\_a} \longrightarrow \texttt{buf\_b} \quad (\mathcal{B}_1, \ 64 \text{ floats}) \\
+    \text{Layer 3 (Dense)}      &: \quad \texttt{buf\_b} \longrightarrow \texttt{buf\_a} \quad (\mathcal{B}_0, \ 10 \text{ floats}) \\
+    \text{Layer 4 (Softmax)}    &: \quad \texttt{buf\_a} \longrightarrow \texttt{buf\_a} \quad \text{(In-place transformation)} \\
+    \text{Final Copy}           &: \quad \texttt{buf\_a} \longrightarrow \text{output}
+\end{align}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.88\linewidth]{memory_pingpong.pdf}
+    \caption{Two-Buffer Ping-Pong Static RAM Allocation vs Naive Allocation across Layer Execution. Buffer A (512 B) and Buffer B (256 B) achieve a peak SRAM ceiling of 768 Bytes.}
+    \label{fig:memory_pingpong}
+\end{figure}
+
+\subsection{Static Memory Allocation Report for MNIST}
+Applying this algorithm to the 3-layer MNIST network produces the static memory profile reported in Table~\ref{tab:memory_report}.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{TMLC Static Memory Allocation Profile for MNIST}
+\label{tab:memory_report}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{lrrr}
+\toprule
+\textbf{Memory Segment / Component} & \textbf{Elements (Floats)} & \textbf{Size (Bytes)} & \textbf{Hardware Destination} \\
+\midrule
+Layer 1 Weights ($784 \times 128$)  & 100,352                    & 401,408               & Flash (\texttt{.rodata}) \\
+Layer 1 Biases ($128$)               & 128                        & 512                   & Flash (\texttt{.rodata}) \\
+Layer 2 Weights ($128 \times 64$)   & 8,192                      & 32,768                & Flash (\texttt{.rodata}) \\
+Layer 2 Biases ($64$)                & 64                         & 256                   & Flash (\texttt{.rodata}) \\
+Layer 3 Weights ($64 \times 10$)    & 640                        & 2,560                 & Flash (\texttt{.rodata}) \\
+Layer 3 Biases ($10$)                & 10                         & 40                    & Flash (\texttt{.rodata}) \\
+\textbf{Total Flash Parameters}     & \textbf{109,386}           & \textbf{437,544}      & \textbf{Flash (427.29 KB)} \\
+\midrule
+Working Buffer A (\texttt{buf\_a})  & 128                        & 512                   & SRAM (\texttt{.bss}) \\
+Working Buffer B (\texttt{buf\_b})  & 64                         & 256                   & SRAM (\texttt{.bss}) \\
+\textbf{Total Peak Working SRAM}    & \textbf{192}               & \textbf{768}          & \textbf{SRAM (0.75 KB)} \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+As illustrated in Figure~\ref{fig:memory_pingpong}, naive cumulative allocation would require over 1,576 bytes of active working RAM for un-fused intermediate representations. TMLC restricts total peak working SRAM to just \textbf{768 Bytes (0.75~KB)}.
+
+% =========================================================================
+% SECTION 9: CODE GENERATION BACKEND
+% =========================================================================
+
+\subsection{Graph-Theoretic Memory Allocation Optimality Proof}
+\label{sec:graph_coloring_proof}
+
+To prove that exactly two working buffers are both necessary and sufficient for sequential feed-forward networks, we formulate buffer allocation as a vertex coloring problem on an interval interference graph [6].
+
+\begin{theorem}[Bipartite Ping-Pong Memory Optimality]
+Let $N$ be a strictly sequential feed-forward neural network with $L$ computational layers without skip or residual connections. The activation interference graph $G = (V, E)$ has chromatic number $\chi(G) = 2$.
+\end{theorem}
+
+\begin{proof}
+Let each vertex $v_i \in V$ represent the activation tensor output by layer $i \in \{1, \dots, L\}$. In a sequential architecture, layer $i+1$ reads the output of layer $i$ and writes to the output of layer $i+1$. Therefore:
+\begin{enumerate}
+    \item The lifetime interval of tensor $v_i$ is $I_i = [t_i^{\text{start}}, t_{i+1}^{\text{end}}]$, where $t_i^{\text{start}}$ is the time layer $i$ begins writing its outputs and $t_{i+1}^{\text{end}}$ is the time layer $i+1$ finishes reading all inputs.
+    \item For any layer $i$, the active tensors during execution are $v_{i-1}$ (the input) and $v_i$ (the output).
+    \item For any $j \ge i+2$, the lifetime of $v_{i-1}$ has completed before $v_{j}$ begins: $t_i^{\text{end}} < t_{i+2}^{\text{start}}$.
+\end{enumerate}
+Construct the edge set $E = \{ (v_i, v_j) \mid I_i \cap I_j \neq \emptyset \}$. Two intervals overlap if and only if $|i - j| = 1$. The resulting interference graph $G$ is a simple path graph $P_L$:
+\begin{equation}
+V = \{v_1, v_2, \dots, v_L\}, \quad E = \{(v_1, v_2), (v_2, v_3), \dots, (v_{L-1}, v_L)\}
+\end{equation}
+A path graph contains no odd cycles and is therefore bipartite. The maximum clique size is $\omega(G) = 2$. By the Perfect Graph Theorem for interval graphs:
+\begin{equation}
+\chi(G) = \omega(G) = 2
+\end{equation}
+Consequently, exactly two memory buffers (\texttt{buf\_a} and \texttt{buf\_b}) are sufficient to schedule all intermediate activations without memory interference.
+\end{proof}
+
+\begin{theorem}[Peak SRAM Bound]
+The peak SRAM consumption under bipartite ping-pong buffer allocation is strictly bounded by:
+\begin{equation}
+\text{PeakSRAM} = 4 \times \left( \max_{k \in \{1, 3, \dots\}} \text{dim}(v_k) \ + \ \max_{k \in \{2, 4, \dots\}} \text{dim}(v_k) \right) \text{ Bytes}
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+Buffers \texttt{buf\_a} and \texttt{buf\_b} must each accommodate the largest tensor assigned to their respective color class:
+\begin{align}
+\text{Size}(\texttt{buf\_a}) &= \max \{ \text{size}(v_1), \text{size}(v_3), \dots \} = 4 \times 128 = 512 \text{ Bytes} \\
+\text{Size}(\texttt{buf\_b}) &= \max \{ \text{size}(v_2), \text{size}(v_4), \dots \} = 4 \times 64 = 256 \text{ Bytes}
+\end{align}
+Total peak static working RAM is strictly $512 + 256 = 768$ Bytes ($0.75$~KB). Naive cumulative allocation would require $\sum_{i=1}^3 \text{size}(v_i) = 512 + 256 + 40 = 808$ Bytes un-fused, and un-fused activation intermediates would escalate working RAM beyond 1,576 Bytes.
+\end{proof}
+
+\section{ANSI C99 Code Generation Backend}
+\label{sec:codegen}
+
+The code generation backend (\texttt{tmlc.backend.c99}) lowers the optimized Intermediate Representation into pure, self-contained, human-readable ANSI C99 source code. The generated output consists of two files: a public header interface (\texttt{model.h}) and a concrete implementation (\texttt{model.c}).
+
+\subsection{Public Interface Architecture (\texttt{model.h})}
+The generated header defines an ultra-clean, minimal C Application Programming Interface (API), exposing compile-time dimension macros and a single re-entrant prediction function prototype:
+\begin{lstlisting}[language=C, basicstyle=\ttfamily\footnotesize, frame=single]
+#ifndef MODEL_H
+#define MODEL_H
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#define MODEL_INPUT_DIM  784
+#define MODEL_OUTPUT_DIM 10
+
+void model_predict(const float input[MODEL_INPUT_DIM], 
+                   float output[MODEL_OUTPUT_DIM]);
+
+#ifdef __cplusplus
+}
+#endif
+#endif /* MODEL_H */
+\end{lstlisting}
+
+\subsection{Exact Floating-Point Parameter Serialization (\texttt{\%.9g})}
+A common pitfall in C code generation is formatting floating-point constants using default specifiers such as \texttt{\%f}, which truncates output to 6 decimal places and introduces silent parameter corruption.
+
+To guarantee bit-level fidelity, TMLC formats all floating-point numbers using \texttt{\%.9g} with an explicit \texttt{f} literal suffix (e.g., \texttt{0.0709535852f}). In IEEE 754 single-precision (32-bit float), printing 9 significant decimal digits guarantees that converting a float to text and back recovers the exact original binary value without rounding loss. The trailing \texttt{f} suffix additionally prevents C compilers from implicitly promoting constants to 64-bit \texttt{double}, allowing the code to execute directly on 32-bit hardware FPUs without emulation overhead.
+
+\subsection{Fused Dense+ReLU Inner Loop Generation}
+Parameter matrices are emitted as static constant global arrays in Flash memory:
+\begin{equation}
+    \texttt{static const float layer1\_weights[100352] = \{ 0.0709535852f, ... \};}
+\end{equation}
+Listing~\ref{lst:dense_relu_c} displays the auto-generated C implementation for the fused Layer 1 operator:
+\begin{lstlisting}[language=C, caption={Auto-Generated Fused Dense+ReLU Kernel in \texttt{model.c}}, label={lst:dense_relu_c}, basicstyle=\ttfamily\footnotesize, frame=single, numbers=left]
+/* Fused Dense+ReLU(784 -> 128): input to buf_a */
+for (int i = 0; i < 128; i++) {
+    float sum = layer1_bias[i];
+    for (int j = 0; j < 784; j++) {
+        sum += input[j] * layer1_weights[j * 128 + i];
+    }
+    buf_a[i] = (sum > 0.0f) ? sum : 0.0f;
+}
+\end{lstlisting}
+
+\subsection{Numerically Stable Softmax Implementation}
+A naive implementation of the Softmax operator computes $y_i = \frac{e^{z_i}}{\sum_{j=1}^K e^{z_j}}$. The exponential function overflows when $z_i > \ln(\text{FLT\_MAX}) \approx 88.7228$. If any pre-activation logit exceeds $88.72$, naive evaluation computes $e^{z_i} = +\infty$, resulting in $\frac{+\infty}{+\infty} = \text{NaN}$.
+
+TMLC implements an algebraically identical, overflow-immune transformation by subtracting the maximum logit $m = \max_{k} z_k$ prior to exponentiation:
+\begin{equation}
+    y_i = \frac{e^{z_i - m}}{\sum_{j=1}^K e^{z_j - m}}
+\end{equation}
+Since $z_i \le m$, it follows that $z_i - m \le 0$, which guarantees that $e^{z_i - m} \in (0, 1]$, making overflow mathematically impossible.
+
+Listing~\ref{lst:softmax_c} shows the generated C implementation executed directly in-place on \texttt{buf\_a}:
+\begin{lstlisting}[language=C, caption={Generated Numerically Stable Softmax Implementation in \texttt{model.c}}, label={lst:softmax_c}, basicstyle=\ttfamily\footnotesize, frame=single, numbers=left]
+/* Softmax(10): in-place on buf_a */
+float max_val = buf_a[0];
+for (int i = 1; i < 10; i++) {
+    if (buf_a[i] > max_val) {
+        max_val = buf_a[i];
+    }
+}
+float sum_exp = 0.0f;
+for (int i = 0; i < 10; i++) {
+    buf_a[i] = expf(buf_a[i] - max_val);
+    sum_exp += buf_a[i];
+}
+float inv_sum = 1.0f / (sum_exp > 0.0f ? sum_exp : 1e-12f);
+for (int i = 0; i < 10; i++) {
+    buf_a[i] *= inv_sum;
+}
+\end{lstlisting}
+
+\subsection{Prohibited CRT Call Audit}
+To verify compliance with bare-metal embedded standards, TMLC runs automated checks in \texttt{test\_codegen.py} asserting that dynamic memory allocation and file I/O functions (\texttt{malloc}, \texttt{calloc}, \texttt{realloc}, \texttt{free}, and \texttt{fopen}) never appear in the generated \texttt{model.c}.
+
+% =========================================================================
+% SECTION 10: NUMERICAL VERIFICATION
+% =========================================================================
+\section{Numerical Verification and Floating-Point Error Bounds}
+\label{sec:verification}
+
+A core design tenet of TMLC is mathematically rigorous verification. Generating syntactically valid C code is insufficient if arithmetic transformations, operator fusions, or memory reuse introduce silent numerical drift.
+
+\subsection{Decoupled NumPy Mathematical Oracle}
+To ensure complete verification independence, TMLC's verifier (\texttt{tmlc.verifier.verify}) implements a completely decoupled reference model (\texttt{numpy\_reference\_predict}) that shares \textbf{zero IR code, zero fusion logic, and zero buffer planning}:
+\begin{lstlisting}[language=Python, basicstyle=\ttfamily\footnotesize, frame=single]
+def numpy_reference_predict(x: np.ndarray, model_node, weights: dict) -> np.ndarray:
+    curr = x.astype(np.float32)
+    for layer in model_node.layers:
+        if isinstance(layer, DenseNode):
+            w = weights[layer.weight_path]
+            b = weights[layer.bias_path]
+            curr = curr @ w + b
+        elif isinstance(layer, ReLUNode):
+            curr = np.maximum(0.0, curr)
+        elif isinstance(layer, SoftmaxNode):
+            shifted = curr - np.max(curr)
+            exps = np.exp(shifted)
+            curr = exps / np.sum(exps)
+    return curr
+\end{lstlisting}
+
+\subsection{Automated Temporary Verification Harness}
+The verification command (\texttt{python main.py verify examples/mnist.tml}) executes an end-to-end automated validation loop:
+\begin{enumerate}
+    \item \textbf{Isolated Sandbox Creation:} A temporary workspace is spawned via Python's \texttt{tempfile} module using \texttt{TemporaryDirectory()}.
+    \item \textbf{C Harness Synthesis:} An ephemeral test fixture (\texttt{verify\_harness.c}) is synthesized within the temporary directory, embedding deterministic pseudo-random input test vectors.
+    \item \textbf{Compilation and Execution:} The harness is compiled with GCC (\texttt{-std=c99 -O2}) and executed in a subprocess.
+    \item \textbf{Tensor Comparison:} The verifier parses C stdout floats and evaluates element-wise discrepancies against reference predictions.
+    \item \textbf{Automatic Teardown:} The temporary directory is deleted, ensuring zero filesystem pollution.
+\end{enumerate}
+
+\subsection{Numerical Verification Results}
+Because GCC optimizations and NumPy can evaluate floating-point operations in slightly different order, minor round-off differences on the order of float32 machine epsilon can arise.
+
+TMLC evaluates prediction fidelity using \texttt{np.allclose} with an absolute tolerance threshold of $\text{atol} = 1 \times 10^{-5}$ and relative tolerance of $\text{rtol} = 1 \times 10^{-4}$.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.88\linewidth]{numerical_verification_error.pdf}
+    \caption{Observed Floating-Point Numerical Discrepancy vs NumPy Reference across Test Vectors. The maximum observed error ($7.92 \times 10^{-9}$) is over three orders of magnitude below the verification threshold ($10^{-5}$).}
+    \label{fig:numerical_verification_error}
+\end{figure}
+
+As shown in Figure~\ref{fig:numerical_verification_error}, empirical testing across test inputs confirms exact correspondence between the compiled C code and the Python reference:
+$$\max |y_{\text{C}} - y_{\text{ref}}| = 7.92 \times 10^{-9}$$
+This measured discrepancy is over \textbf{1,200 times smaller} than the $10^{-5}$ verification threshold, confirming that C code generation, operator fusion, and buffer reuse introduce zero observable error.
+
+% =========================================================================
+% SECTION 11: TRAINING METHODOLOGY
+% =========================================================================
+
+\subsection{Rigorous IEEE 754 Floating-Point Error Bounds and Backward Error Analysis}
+\label{sec:wilkinson_proof}
+
+A central design pillar of TMLC is mathematically bounded floating-point execution. We establish analytical bounds on numerical divergence using Wilkinson's backward error analysis [8].
+
+\begin{theorem}[Backward Error Bound for Dot Product Accumulation]
+Let $x, w \in \mathbb{R}^n$ be IEEE 754 single-precision floating-point vectors evaluated in an inner loop $\hat{s} = \text{fl}\left(\sum_{i=1}^n x_i w_i\right)$ with unit roundoff $u = 2^{-24} \approx 5.96 \times 10^{-8}$. Assuming $n u < 1$, the computed inner product satisfies:
+\begin{equation}
+|\hat{s} - s| \le \gamma_n \sum_{i=1}^n |x_i w_i|, \quad \text{where} \quad \gamma_n = \frac{n u}{1 - n u}
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+Let $p_i = \text{fl}(x_i w_i) = x_i w_i (1 + \mu_i)$ with $|\mu_i| \le u$. The partial accumulation sum $s_k = \text{fl}(s_{k-1} + p_k)$ introduces a rounding error $\alpha_k$ with $|\alpha_k| \le u$:
+\begin{align}
+\hat{s} &= \left( \dots \left( (p_1 + p_2)(1 + \alpha_2) + p_3 \right)(1 + \alpha_3) \dots + p_n \right)(1 + \alpha_n) \\
+&= \sum_{i=1}^n x_i w_i (1 + \mu_i) \prod_{j=\max(2, i)}^n (1 + \alpha_j)
+\end{align}
+Let $(1 + \theta_i) = (1 + \mu_i) \prod_{j=\max(2, i)}^n (1 + \alpha_j)$. Each $\theta_i$ is a product of at most $n$ factors of the form $(1 \pm \epsilon)$. By induction on $n$, for $|\epsilon_k| \le u$ and $n u < 1$:
+\begin{equation}
+\prod_{k=1}^n (1 + \epsilon_k) = 1 + \theta_n, \quad \text{where} \quad |\theta_n| \le \frac{n u}{1 - n u} \equiv \gamma_n
+\end{equation}
+Subtracting the exact mathematical inner product $s = \sum_{i=1}^n x_i w_i$:
+\begin{equation}
+|\hat{s} - s| = \left| \sum_{i=1}^n x_i w_i \theta_i \right| \le \sum_{i=1}^n |x_i w_i| |\theta_i| \le \gamma_n \sum_{i=1}^n |x_i w_i|
+\end{equation}
+\end{proof}
+
+For Layer 1 of the MNIST model, the dimension is $n = 784$. The unit roundoff is $u = 2^{-24} \approx 5.96046 \times 10^{-8}$. The resulting backward error constant is:
+\begin{equation}
+\gamma_{784} = \frac{784 \times 5.96046 \times 10^{-8}}{1 - 784 \times 5.96046 \times 10^{-8}} \approx \frac{4.673 \times 10^{-5}}{0.999953} \approx 4.673 \times 10^{-5}
+\end{equation}
+Because input pixel values are normalized to $[0.0, 1.0]$ and weights possess bounded empirical variance ($\sigma_w \approx 0.08$), the maximum forward discrepancy observed across test vectors is bounded well within the verification tolerance ($\text{atol}=10^{-5}, \text{rtol}=10^{-4}$).
+
+\subsection{Exact Decimal Representation Theorem for Floating-Point Parameter Serialization}
+\label{sec:goldberg_proof}
+
+\begin{theorem}[Goldberg's Decimal Round-Tripping Invariant]
+To guarantee that parsing an emitted decimal string literal back into an IEEE 754 binary32 floating-point number reproduces the exact 32-bit pattern without losing a single bit of information, the decimal formatting precision $P$ must satisfy:
+\begin{equation}
+P \ge \left\lceil 1 + p \cdot \log_{10}(2) \right\rceil
+\end{equation}
+where $p = 24$ is the significand bit length of IEEE 754 single precision.
+\end{theorem}
+
+\begin{proof}
+Let $x$ and $y$ be two distinct binary32 floating-point values with exponent $e$:
+\begin{equation}
+|x - y| \ge 2^{e - 23}
+\end{equation}
+If $x$ and $y$ are formatted into $P$ decimal significant digits, they are rounded to the nearest multiple of $10^{E - P + 1}$, where $10^E \le x < 10^{E+1}$. To guarantee that $x$ and $y$ never map to the identical decimal representation, the maximum decimal rounding interval must be strictly smaller than the minimum binary spacing:
+\begin{equation}
+10^{E - P + 1} < 2^{e - 23}
+\end{equation}
+Since $10^E \le 2^e$, in the worst-case configuration:
+\begin{equation}
+10^{1 - P} < 2^{-24} \iff P - 1 > 24 \log_{10}(2) \iff P \ge \lceil 1 + 24 \times 0.3010299957 \rceil = \lceil 8.2247 \rceil = 9
+\end{equation}
+Formatting floating-point parameters with format specifier \texttt{\%.9g} guarantees mathematical bit-level round-tripping invariance between Python training and generated C99 firmware.
+\end{proof}
+
+\section{Model Training Methodology and Benchmark Dataset}
+\label{sec:training}
+
+To evaluate TMLC on a representative embedded machine learning workload, a deep neural network was trained on the Modified National Institute of Standards and Technology (MNIST) benchmark dataset [9].
+
+\subsection{Benchmark Dataset and Preprocessing}
+The MNIST dataset consists of $70,000$ grayscale images of handwritten digits ($0$ through $9$) partitioned into 60,000 training and 10,000 test samples. The preprocessing pipeline flattens the two-dimensional image into a 1D feature vector of length $784$ and scales pixel values from raw 8-bit integers $[0, 255]$ into IEEE 754 single-precision floats $[0.0, 1.0]$.
+
+The training pipeline (\texttt{training/train\_mnist.py}) implements atomic file caching: archives are streamed into an ephemeral temporary file (\texttt{mnist.tmp}) and atomically renamed to \texttt{mnist.gz} only after download completion and integrity verification.
+
+\subsection{Neural Network Architecture and Training Dynamics}
+The network topology comprises three Dense layers interleaved with non-linear activations:
+\begin{equation}
+    \mathbb{R}^{784} \xrightarrow{\text{Dense}_1} \mathbb{R}^{128} \xrightarrow{\text{ReLU}} \mathbb{R}^{128} \xrightarrow{\text{Dense}_2} \mathbb{R}^{64} \xrightarrow{\text{ReLU}} \mathbb{R}^{64} \xrightarrow{\text{Dense}_3} \mathbb{R}^{10} \xrightarrow{\text{Softmax}} \Delta^{10}
+\end{equation}
+
+Table~\ref{tab:model_architecture} summarizes the layer dimensions and parameter counts, totaling \textbf{109,386 trainable float32 parameters} (437,544 bytes of Flash storage).
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{MNIST Model Topology and Parameter Distribution}
+\label{tab:model_architecture}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Layer Name} & \textbf{Input Dim} & \textbf{Output Dim} & \textbf{Weight Matrix} & \textbf{Bias Vector} \\
+\midrule
+Layer 1 (Dense+ReLU) & 784                & 128                 & $784 \times 128 = 100,352$ & $128$ \\
+Layer 2 (Dense+ReLU) & 128                & 64                  & $128 \times 64 = 8,192$    & $64$  \\
+Layer 3 (Dense)      & 64                 & 10                  & $64 \times 10 = 640$       & $10$  \\
+Output (Softmax)     & 10                 & 10                  & $0$                        & $0$   \\
+\midrule
+\textbf{Totals}      & \textbf{784}       & \textbf{10}         & \textbf{109,184}           & \textbf{202} \\
+\multicolumn{5}{c}{\textbf{Total Trainable Parameters: 109,386 floats (437.54 KB)}} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The model was trained using the Adam optimizer [10] ($\eta = 0.001$, $\beta_1 = 0.9, \beta_2 = 0.999$, batch size 64, 10 epochs). As shown in Figure~\ref{fig:training_curves}, the model achieves a final held-out test accuracy of \textbf{97.68\%}.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.88\linewidth]{training_curves.pdf}
+    \caption{Training Loss and Test Accuracy Progression across 10 Epochs for the 3-Layer MNIST Network. Final held-out test accuracy reached \textbf{97.68\%}.}
+    \label{fig:training_curves}
+\end{figure}
+
+% =========================================================================
+% SECTION 12: HARDWARE LATENCY AND EVALUATION
+% =========================================================================
+\section{Hardware Latency and Memory Evaluation}
+\label{sec:evaluation}
+
+Inference latency is measured using a dedicated standalone C harness (\texttt{tools/benchmark.c}) that directly links against \texttt{generated/model.c} and \texttt{generated/model.h}. 
+
+\subsection{Benchmarking Methodology}
+The benchmark harness utilizes native high-resolution hardware timers (\texttt{Query\allowbreak Performance\allowbreak Counter} on Windows, \texttt{clock\_gettime} on POSIX). It executes 100 untimed warm-up calls followed by exactly 10,000 consecutive timed inference calls.
+
+The benchmark is compiled and executed via:
+\begin{lstlisting}[language=bash, basicstyle=\ttfamily\footnotesize, frame=single]
+gcc -std=c99 -O2 -I generated tools/benchmark.c generated/model.c -o benchmark.exe -lm
+./benchmark.exe
+\end{lstlisting}
+
+\subsection{Empirical Latency and Throughput Results}
+Table~\ref{tab:latency_results} and Figure~\ref{fig:latency_comparison} detail the empirical latency and throughput across GCC optimization levels on the 109,386-parameter MNIST network.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Inference Latency and Throughput across GCC Optimization Flags (MNIST Model)}
+\label{tab:latency_results}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{lrrr}
+\toprule
+\textbf{Compiler Flag} & \textbf{Total Time (10,000 Calls)} & \textbf{Average Latency ($\mu$s)} & \textbf{Throughput (FPS)} \\
+\midrule
+\texttt{-O0} (No Optimization)      & 9.8420 s                           & 984.20 $\mu$s                    & 1,016 calls/s             \\
+\texttt{-O1} (Basic Optimization)   & 2.7650 s                           & 276.50 $\mu$s                    & 3,616 calls/s             \\
+\textbf{\texttt{-O2} (Default)}     & \textbf{1.9565 s}                  & \textbf{195.65 $\mu$s}           & \textbf{5,111 calls/s}    \\
+\texttt{-O3} (Aggressive Unrolling) & 1.8920 s                           & 189.20 $\mu$s                    & 5,285 calls/s             \\
+\texttt{-Os} (Code Size Focus)      & 2.1840 s                           & 218.40 $\mu$s                    & 4,578 calls/s             \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.88\linewidth]{latency_comparison.pdf}
+    \caption{TMLC Compiled Model Latency across GCC Optimization Levels. Under default \texttt{-O2} optimization, the model executes in \textbf{195.65 $\mu$s} per sample, yielding over 5,111 inferences per second.}
+    \label{fig:latency_comparison}
+\end{figure}
+
+Under default \texttt{-O2} optimization, total inference latency is \textbf{195.65 $\mu$s} (0.196 ms), delivering over \textbf{5,111 inferences per second}. Moving from \texttt{-O0} to \texttt{-O2} achieves a \textbf{5.03$\times$ speedup}.
+
+\subsection{Microcontroller Execution Projections}
+\begin{itemize}
+    \item \textbf{ARM Cortex-M4 @ 168 MHz (STM32F407):} With $109,184$ multiply-accumulate (MAC) operations executing at 168~MHz, projected inference latency is $\approx 0.81$~ms ($>1,200$ classifications per second).
+    \item \textbf{ESP32 (Xtensa Dual-Core @ 240 MHz):} Projected single-core inference latency is $\approx 0.57$~ms.
+\end{itemize}
+
+\subsection{Weight-Only Symmetric Int8 Quantization and Simulation}
+\label{sec:quantization}
+To address extreme flash memory constraints on edge microcontrollers, an optional ahead-of-time symmetric per-tensor int8 weight quantization stage was integrated into the compiler. For each Dense layer weight tensor $W$, the per-tensor positive scaling factor is derived as:
+\begin{equation}
+\text{scale} = \begin{cases} \frac{\max(|W|)}{127.0} & \text{if } \max(|W|) > 0 \\ 1.0 & \text{if } \max(|W|) = 0 \end{cases}
+\end{equation}
+Weights are rounded and clipped into $[-127, 127]$ and stored as \texttt{static const int8\_t}, with per-tensor scales stored as single-precision floating-point constants. Bias vectors and intermediate activations are preserved in float32.
+
+\paragraph{Inner-Loop Implementation and Arithmetic Fidelity.}
+Generated C99 kernels dequantize weights on-the-fly during accumulation without dynamic allocation or runtime dependencies:
+\begin{lstlisting}[language=C, basicstyle=\ttfamily\footnotesize, frame=single]
+acc += input[j] * ((float)layer_weights[j * out_dim + i] * layer_scale);
+\end{lstlisting}
+The output is numerically verified against an independent NumPy reference reconstructing $W_{\text{dequant}} = q \cdot \text{scale}$. Both the Tiny (4--8--2) and MNIST (784--128--64--10) compiled models pass strict numerical verification ($\text{atol}=10^{-5}, \text{rtol}=10^{-4}$), with measured maximum absolute errors of $2.98 \times 10^{-8}$ and $1.19 \times 10^{-7}$ respectively.
+
+\paragraph{Empirical Memory, Accuracy, and Latency Results.}
+\begin{itemize}
+    \item \textbf{Flash Storage Compression:} For the MNIST model, static weight flash consumption decreases from 437,544~bytes (427.3~KB) to 110,004~bytes (107.4~KB)---achieving a \textbf{3.98$\times$ storage reduction} (74.9\% savings). The generated C99 source file size decreases from 1,730,385~bytes to 484,444~bytes.
+    \item \textbf{Generalization Accuracy:} Across the complete 10,000-image MNIST test partition (\texttt{t10k}) evaluated with the dequantized NumPy forward pass (\texttt{tools/eval\_accuracy.py}), the float32 model achieves 97.68\% test accuracy (9,768/10,000) and int8 achieves 97.67\% (9,767/10,000), exhibiting 99.95\% prediction agreement (only 5 out of 10,000 classifications differ).
+    \item \textbf{Host Architecture Execution Profiling:} Benchmarking under GCC \texttt{-O2} on Linux x86\_64 over 10,000 consecutive iterations demonstrates an average latency of 127.28~$\mu$s for float32 and 91.79~$\mu$s for int8, reflecting L1/L2 cache locality benefits from the reduced parameter footprint during on-the-fly dequantization.
+    \item \textbf{Embedded Simulation \& Conformance Checking:} Emulation configurations targeting the Espressif ESP32-S3 microcontroller (\texttt{board-esp32-s3-devkitc-1}) were established in the Wokwi simulation framework (\texttt{wokwi/}) supporting UART streaming and microsecond timer instrumentation via \texttt{micros()}. The auto-generated translation units compile with zero diagnostics under strict conformance flags (\texttt{gcc -std=c99 -Wall -Wextra -Wpedantic -Werror -c model.c}).
+\end{itemize}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.88\linewidth]{quantization_differential_verification.pdf}
+    \caption{Symmetric Int8 Quantization and Differential Verification Pipeline: Dynamic scale factor calibration, quantized C99 emission, and closed-loop validation against independent NumPy reference.}
+    \label{fig:quantization_verification}
+\end{figure}
+
+
+\subsubsection{Mathematical Theory and Noise Bounds of Symmetric Int8 Quantization}
+\label{sec:quant_theory}
+
+Quantizing parameter tensors from 32-bit floating-point to signed 8-bit integers is governed by rate-distortion trade-offs. TMLC adopts a \textbf{symmetric per-tensor weight-only quantization scheme}.
+
+Let $W \in \mathbb{R}^{M \times N}$ be an unquantized weight matrix. The symmetric quantization grid spans integer values $[-127, 127]$. The optimal dynamic scale factor $S$ is uniquely determined by the absolute peak parameter magnitude:
+\begin{equation}
+S = \begin{cases} \frac{\max_{i,j} |W_{i,j}|}{127.0} & \text{if } \max |W| > 0 \\ 1.0 & \text{if } \max |W| = 0 \end{cases}
+\end{equation}
+The quantization mapping $Q : \mathbb{R} \to \mathbb{Z} \cap [-127, 127]$ is defined as:
+\begin{equation}
+q = Q(W; S) = \text{clip}\left( \left\lfloor \frac{W}{S} \right\rceil, \ -127, \ 127 \right)
+\end{equation}
+where $\lfloor \cdot \rceil$ represents round-to-nearest with ties rounded to even.
+
+
+\paragraph{Quantization Noise Modeling and SQNR.}
+Under standard high-resolution quantization assumptions, the quantization error $e = W - q S$ is modeled as a uniformly distributed random variable $e \sim U\left(-\frac{S}{2}, \frac{S}{2}\right)$. The noise variance is:
+\begin{equation}
+\sigma_e^2 = \int_{-S/2}^{S/2} e^2 \frac{1}{S} \, de = \frac{S^2}{12}
+\end{equation}
+The Signal-to-Quantization-Noise Ratio (SQNR) for an 8-bit parameter tensor with dynamic range $R = 2 \cdot \max|W|$ is bounded by:
+\begin{equation}
+\text{SQNR} = 10 \log_{10}\left( \frac{\sigma_W^2}{\sigma_e^2} \right) \approx 6.02 B + 1.76 + 10 \log_{10}\left(\frac{\sigma_W^2}{W_{\max}^2}\right) \text{ dB}
+\end{equation}
+For $B = 8$, the theoretical peak SQNR exceeds $49.8$~dB. Because neural network parameter distributions exhibit robust Gaussian or Laplace bell shapes concentrated around zero, empirical loss of classification fidelity is infinitesimal: held-out MNIST test accuracy shifts from 97.68\% to 97.67\% (a delta of only 0.01 points across 10,000 images, with 99.95\% prediction agreement).
+
+\paragraph{Runtime Arithmetic Advantages of Symmetric Quantization.}
+In asymmetric affine quantization, each quantized value incorporates a zero-point offset $Z$: $x \approx S (q - Z)$. Evaluating an inner product under asymmetric quantization requires evaluating:
+\begin{equation}
+\sum_{i=1}^n x_i W_i = S_x S_w \sum_{i=1}^n (q_{x,i} - Z_x)(q_{w,i} - Z_w) = S_x S_w \left( \sum_{i=1}^n q_{x,i} q_{w,i} - Z_w \sum_{i=1}^n q_{x,i} - Z_x \sum_{i=1}^n q_{w,i} + n Z_x Z_w \right)
+\end{equation}
+Evaluating the cross-term $Z_w \sum q_{x,i}$ introduces substantial instruction overhead and register spills on bare-metal microcontroller cores lacking dedicated SIMD hardware. By strictly enforcing $Z_w = 0$ in symmetric quantization, all zero-point cross-terms vanish identically:
+\begin{equation}
+\sum_{i=1}^n x_i W_i = S_w \sum_{i=1}^n x_i q_{w,i}
+\end{equation}
+This allows the C99 backend to emit clean, unrolled single-cycle MAC instructions with zero offset-adjustment runtime latency.
+
+\subsection{Physical Microcontroller Deployment: Real-Time ESP32 Interactive Web Demonstration}
+\label{sec:esp32_hardware_demo}
+
+To empirically validate TMLC's compiled C99 kernel in a physical bare-metal microcontroller environment, the symmetric int8 quantized MNIST deep neural network ($784 \to 128 \to 64 \to 10$) was targeted and deployed directly onto an Espressif ESP32 development platform (featuring a dual-core Xtensa 32-bit LX6 microprocessor clocked at 240~MHz with 520~KB internal SRAM and 4~MB external SPI Flash).
+
+\subsubsection{Architecture and Zero-Cloud Edge Pipeline}
+As illustrated in Figure~\ref{fig:esp32_hardware_demo}, the physical demonstrator operates as an autonomous, zero-cloud edge system:
+\begin{enumerate}
+    \item \textbf{Autonomous SoftAP Hotspot:} The ESP32 firmware initializes an autonomous IEEE 802.11 b/g/n Wi-Fi Access Point with SSID \texttt{TMLC-ESP32-MNIST} at static IP \texttt{192.168.4.1}. The system operates completely offline without requiring any local router, external internet connection, or cloud relay.
+    \item \textbf{Flash-Resident Web Server:} The complete responsive single-page drawing web application (\texttt{index\_html.h}) is compiled directly into read-only Flash memory via the GCC \texttt{PROGMEM} attribute, consuming zero static RAM or dynamic heap memory. An embedded HTTP web server on port 80 serves this UI to any connecting browser client (smartphone, tablet, or laptop).
+    \item \textbf{Client-Side Touch Digit Normalization:} Users draw a digit directly on an HTML5 \texttt{<canvas>}. Client-side JavaScript computes the bounding box, extracts the center-of-mass coordinates, downsamples the drawing into a standard MNIST-format $28 \times 28$ grayscale tensor (784 bytes), and sends an HTTP \texttt{POST /predict} request containing the serialized hexadecimal payload.
+    \item \textbf{Static Memory Execution:} Upon receipt, the ESP32 decodes the payload directly into the compiler's pre-allocated static input buffer. The forward inference pass (\texttt{model\_\allowbreak predict}) executes entirely in pre-allocated static ping-pong buffers (\textbf{768 Bytes working SRAM}), avoiding dynamic heap allocation (\texttt{malloc}/\texttt{free}) to protect against heap fragmentation.
+\end{enumerate}
+
+\begin{figure}[htbp]
+\centering
+\begin{subfigure}[b]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{esp32_hardware_demo_digit3.jpg}
+    \caption{Digit `3' classification: 98.7\% confidence, $134.5$~ms end-to-end round-trip latency.}
+    \label{fig:demo_digit3}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{esp32_hardware_demo_digit4.jpg}
+    \caption{Digit `4' classification: 99.1\% confidence, $133.7$~ms end-to-end round-trip latency.}
+    \label{fig:demo_digit4}
+\end{subfigure}
+\caption{Physical Hardware Deployment on ESP32 Microcontroller. The physical ESP32 board (resting on the host keyboard, connected via USB) runs the TMLC compiled C99 int8 model, hosting an autonomous Wi-Fi SoftAP and web server. Left pane: Serial monitor telemetry capturing live boot, SoftAP configuration, and real-time inference telemetry. Right pane: Responsive web UI showing user-drawn canvas strokes, top predicted class, and confidence distribution.}
+\label{fig:esp32_hardware_demo}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.88\linewidth]{esp32_dualcore_architecture.pdf}
+    \caption{Physical ESP32 Dual-Core Microcontroller Architecture: Protocol core (PRO\_CPU, Core 0) services Wi-Fi SoftAP and LwIP HTTP server, while application core (APP\_CPU, Core 1) executes hard real-time forward inference ($1.28$ ms) with zero dynamic allocation.}
+    \label{fig:esp32_dualcore_architecture}
+\end{figure}
+
+\subsubsection{Empirical Hardware Telemetry}
+Telemetry captured over the physical UART serial interface at 115,200 baud confirms:
+\begin{itemize}
+    \item \textbf{Inference Confidence:} The compiled int8 model delivers crisp, high-confidence discriminative boundaries on live human handwriting, correctly identifying digit `3' with \textbf{98.7\% confidence} and digit `4' with \textbf{99.1\% confidence}.
+    \item \textbf{Latency Breakdown:} The core C99 neural network inference kernel executes in under $\approx 1.5$~ms on the Xtensa LX6 core. The total measured round-trip time logged by the serial monitor is $\approx 133.7$ to $134.5$~ms ($133,721\,\mu\text{s}$ to $134,531\,\mu\text{s}$), which encompasses IEEE 802.11 Wi-Fi packet reception, HTTP header parsing, hex-string tensor decoding, model forward pass, and JSON response transmission.
+    \item \textbf{Memory Footprint on Silicon:} Flash weight storage consumes exactly \textbf{110,004 Bytes} (a 3.98$\times$ reduction over float32), and working RAM is bounded to \textbf{768 Bytes}, leaving over 95\% of ESP32 SRAM available for the FreeRTOS networking stack and Wi-Fi buffers.
+\end{itemize}
+
+% =========================================================================
+% SECTION 13: COMPREHENSIVE QUALITY ASSURANCE
+% =========================================================================
+\section{Comprehensive Testing and Quality Assurance}
+\label{sec:qa}
+
+TMLC incorporates a multi-tiered verification framework comprising 40 automated test fixtures, end-to-end subprocess CLI verification, and deliberate mutation testing.
+
+\subsection{Test Suite Architecture}
+The test suite is organized into six functional modules executed under \texttt{pytest}, summarized in Table~\ref{tab:test_suite_summary}.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{TMLC Automated Test Suite Architecture (40 Passing Tests)}
+\label{tab:test_suite_summary}
+\begin{tabular}{llcp{6.5cm}}
+\toprule
+\textbf{Test Module} & \textbf{Component Tested} & \textbf{Count} & \textbf{Coverage / Key Verification Invariants} \\
+\midrule
+\texttt{test\_lexer.py}    & Lexical Analyzer          & 6              & Valid tokens, identifiers, integer parsing, string unescaping, E001 (bad char), E002 (unterminated string). \\
+\texttt{test\_parser.py}   & SLR(1) Parsing Engine     & 7              & AST construction, grammar productions, table generation, conflict-free verification, E101 (syntax errors). \\
+\texttt{test\_semantic.py} & Semantic Analyzer         & 8              & Multi-layer continuity, E201 (dim mismatch), E202 (non-positive dim), E203 (output mismatch), E204 (no dense). \\
+\texttt{test\_loader.py}   & Weight Loader             & 7              & Binary \texttt{.npy} parsing, E301 (missing file), E302 (weight shape), E303 (bias shape), E304 (NaN/Inf). \\
+\texttt{test\_c99.py}      & C99 Codegen Backend       & 6              & Header/source generation, \texttt{\%.9g} float precision, static buffers, zero forbidden CRT calls. \\
+\texttt{test\_verifier.py} & Numerical Verifier        & 6              & Independent NumPy reference, tempfile harness isolation, zero artifact leakage, CLI subprocess verification. \\
+\midrule
+\textbf{Total Test Suite}  & \textbf{Full Compiler}    & \textbf{40}    & \textbf{100\% Pass Rate (0 Failures, 0 Warnings)} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Subprocess CLI Negative Testing and Mutation Analysis}
+TMLC enforces \textbf{end-to-end subprocess CLI negative testing} across all 17 invalid-input test fixtures. The test helper executes \texttt{python main.py build <invalid\_model.tml>} in a clean child process and asserts:
+\begin{enumerate}
+    \item \textbf{Exit Code 1:} Non-zero exit status signaling failure.
+    \item \textbf{Diagnostic Error Code in Stderr:} Stderr contains the exact expected diagnostic code (e.g., \texttt{"[E201]"}).
+    \item \textbf{Zero Artifact Guarantee:} \texttt{generated/model.c} is \textbf{never created or updated}.
+\end{enumerate}
+
+To verify that these assertions provide robust fault detection, deliberate fault-injection mutation analysis was executed by modifying \texttt{main.py} to synthesize an early \texttt{model.c} artifact prior to semantic analysis. \textbf{All 17 out of 17 negative test fixtures immediately failed}, establishing a \textbf{100.0\% mutation detection rate}.
+
+
+\subsection{Exhaustive Itemized Test Suite Catalog (59 Passing Fixtures)}
+\label{sec:full_test_catalog}
+Table~\ref{tab:complete_59_tests} documents the complete test suite structure comprising 40 baseline tests and 19 int8 quantization tests, executed under \texttt{pytest}.
+
+\begin{table}[htbp]
+\centering
+\scriptsize
+\caption{Comprehensive Catalog of All 59 Automated Test Fixtures}
+\label{tab:complete_59_tests}
+\begin{tabular}{llcp{7.2cm}}
+\toprule
+\textbf{Test Module} & \textbf{Function Name} & \textbf{Count} & \textbf{Assertion Oracle / Verification Invariant} \\
+\midrule
+\texttt{test\_lexer.py} & \texttt{test\_tokens\_valid} & 6 & Verifies correct lexical tokenization of keywords, integers, strings. \\
+                        & \texttt{test\_tokens\_error\_e001} & & Asserts diagnostic \texttt{E001} triggered upon encountering illegal characters. \\
+                        & \texttt{test\_tokens\_error\_e002} & & Asserts diagnostic \texttt{E002} triggered upon unterminated string literals. \\
+\midrule
+\texttt{test\_parser.py}& \texttt{test\_slr\_table\_generation} & 7 & Confirms 37 canonical states with provably 0 S/R and 0 R/R conflicts. \\
+                        & \texttt{test\_ast\_construction} & & Validates syntactic AST tree hierarchy across valid models. \\
+                        & \texttt{test\_syntax\_error\_e101} & & Asserts diagnostic \texttt{E101} triggered upon unexpected lookahead tokens. \\
+\midrule
+\texttt{test\_semantic.py}& \texttt{test\_semantic\_valid} & 8 & Confirms dimensional continuity across multi-layer networks. \\
+                          & \texttt{test\_dim\_mismatch\_e201} & & Asserts diagnostic \texttt{E201} on adjacent layer dimension mismatch. \\
+                          & \texttt{test\_nonpositive\_e202} & & Asserts diagnostic \texttt{E202} on zero or negative dimension parameters. \\
+                          & \texttt{test\_output\_mismatch\_e203} & & Asserts diagnostic \texttt{E203} when final layer output mismatches model decl. \\
+                          & \texttt{test\_no\_dense\_e204} & & Asserts diagnostic \texttt{E204} when model specification contains zero Dense. \\
+\midrule
+\texttt{test\_loader.py}  & \texttt{test\_load\_valid\_npy} & 7 & Validates NumPy binary header parsing and little-endian float loading. \\
+                          & \texttt{test\_missing\_file\_e301} & & Asserts diagnostic \texttt{E301} when parameter file does not exist on disk. \\
+                          & \texttt{test\_weight\_shape\_e302} & & Asserts diagnostic \texttt{E302} on 2D weight matrix shape discrepancy. \\
+                          & \texttt{test\_bias\_shape\_e303} & & Asserts diagnostic \texttt{E303} on 1D bias vector dimension discrepancy. \\
+                          & \texttt{test\_nan\_inf\_e304} & & Asserts diagnostic \texttt{E304} on IEEE 754 NaN, $+\infty$, or $-\infty$ values. \\
+\midrule
+\texttt{test\_c99.py}     & \texttt{test\_c99\_emission} & 6 & Validates standalone C99 header and source file generation. \\
+                          & \texttt{test\_float\_precision} & & Verifies exact \texttt{\%.9g} float parameter serialization. \\
+                          & \texttt{test\_forbidden\_crt\_calls} & & Regex asserts 0 matches for \texttt{malloc}, \texttt{calloc}, \texttt{free}, \texttt{fopen}. \\
+\midrule
+\texttt{test\_verifier.py}& \texttt{test\_numpy\_reference} & 6 & Verifies independent NumPy reference execution against C99 stdout. \\
+                          & \texttt{test\_tempfile\_isolation} & & Asserts ephemeral GCC sandbox directory cleaned up without leakage. \\
+                          & \texttt{test\_cli\_negative\_suite} & & End-to-end subprocess CLI verification across 17 negative fixtures. \\
+\midrule
+\texttt{test\_quantization.py} & \texttt{test\_quant\_scale} & 7 & Validates $S = \max(|W|)/127.0$, scale positive edge-case for zeros. \\
+                                & \texttt{test\_clipping\_bounds} & & Asserts all quantized weights strictly bounded in $[-127, 127]$. \\
+                                & \texttt{test\_dequant\_roundtrip} & & Verifies $W_{\text{dequant}} = q \cdot S$ precision against reference. \\
+\midrule
+\texttt{test\_codegen\_int8.py}& \texttt{test\_int8\_types} & 6 & Validates \texttt{static const int8\_t} emission and loop expressions. \\
+                                & \texttt{test\_byte\_identical\_f32} & & Asserts unquantized float32 output remains 100\% byte-identical to HEAD. \\
+\midrule
+\texttt{test\_verifier\_int8.py}& \texttt{test\_verify\_int8\_tiny} & 6 & Verifies int8 Tiny model against dequantized NumPy ($\Delta \le 10^{-5}$). \\
+                                 & \texttt{test\_verify\_int8\_mnist}& & Verifies int8 MNIST model against dequantized NumPy ($\Delta \le 10^{-5}$). \\
+                                 & \texttt{test\_fault\_injection}   & & Asserts corrupted int8 weights trigger verifier error \texttt{E601}. \\
+\midrule
+\textbf{Total Test Suite} & \textbf{All Modules} & \textbf{59} & \textbf{100\% Pass Rate (59/59 Green, 0 Failures, 0 Warnings)} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Diagnostic Error Code Master Taxonomy}
+TMLC establishes an enumerated diagnostic taxonomy spanning all compiler stages, summarized in Table~\ref{tab:error_taxonomy}.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{TMLC Master Diagnostic Error Catalog}
+\label{tab:error_taxonomy}
+\begin{tabular}{llp{9.2cm}}
+\toprule
+\textbf{Code} & \textbf{Compiler Subsystem} & \textbf{Condition and Trigger Description} \\
+\midrule
+\texttt{E001} & Lexical Scanner            & Unrecognized character outside lexical grammar. \\
+\texttt{E002} & Lexical Scanner            & Unterminated string literal before newline or EOF. \\
+\texttt{E101} & SLR(1) Parser              & Syntax error / unexpected token in parsing table. \\
+\texttt{E201} & Semantic Analyzer          & Dimension mismatch between adjacent layers ($D_{\text{out}}^{(l-1)} \neq D_{\text{in}}^{(l)}$). \\
+\texttt{E202} & Semantic Analyzer          & Non-positive dimension declaration ($D \le 0$). \\
+\texttt{E203} & Semantic Analyzer          & Final layer output dimension does not match model output. \\
+\texttt{E204} & Semantic Analyzer          & Model declaration contains no Dense layers. \\
+\texttt{E301} & Weight Loader              & Weight or bias file does not exist or empty string path. \\
+\texttt{E302} & Weight Loader              & Weight matrix shape differs from $(D_{\text{in}}, D_{\text{out}})$. \\
+\texttt{E303} & Weight Loader              & Bias vector shape differs from $(D_{\text{out}},)$. \\
+\texttt{E304} & Weight Loader              & IEEE 754 NaN, $+\infty$, or $-\infty$ detected in parameter array. \\
+\texttt{E401} & IR / Optimizer             & Internal intermediate representation inconsistency. \\
+\texttt{E501} & C99 Codegen Backend        & Unsupported backend operation or invalid AST node. \\
+\texttt{E601} & Numerical Verifier         & Generated C output deviates from NumPy reference ($\Delta > \text{tol}$). \\
+\texttt{E602} & Numerical Verifier         & C compiler (GCC) not found or generated C code failed compilation. \\
+\texttt{W101} & SLR(1) Grammar Engine      & Warning: SLR(1) parsing table contains grammar conflicts. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% =========================================================================
+% SECTION 14: DISCUSSION AND FUTURE WORK
+% =========================================================================
+\section{Discussion and Future Roadmap}
+\label{sec:comparative_eval}
+
+\subsection{Architectural Trade-Off Analysis}
+The design of TMLC prioritizes \textbf{determinism, safety, and minimalism} over runtime generality:
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Ahead-of-Time Specialization:} TMLC specializes the C code directly to the model's exact topology. Loop bounds are integer compile-time constants (e.g., \texttt{j < 784}), allowing the host C compiler to unroll loops, eliminate index calculations, and allocate registers optimally.
+    \item \textbf{Interpreter Flexibility vs Overhead:} Runtimes like TFLite Micro retain an interpreter for model swapping, which wastes precious Flash and SRAM on devices where firmware updates are executed via over-the-air (OTA) binaries.
+\end{itemize}
+
+\subsection{Future Research and Engineering Roadmap}
+Future extensions planned for TMLC include:
+\begin{enumerate}
+    \item \textbf{INT8 Post-Training Quantization (PTQ):} Introducing integer affine quantization ($q = \text{clamp}(-128, 127, \lfloor x/S \rceil + Z)$) to reduce weight storage by $4\times$ (down to $\approx 109$~KB) and leverage integer SIMD arithmetic on Cortex-M0/M3.
+    \item \textbf{Convolutional and Pooling Operators:} Extending the DSL and IR to support 2D convolutions (\texttt{Conv2D}, \texttt{DepthwiseConv2D}) and spatial pooling (\texttt{MaxPool2D}) for edge vision models.
+    \item \textbf{Hardware SIMD Kernel Backends:} Integrating ARM CMSIS-NN intrinsics (\texttt{\_\_SMLAD}) for single-cycle dual MAC operations.
+    \item \textbf{Formal MISRA-C:2012 Compliance:} Incorporating automated static analysis verifying strict adherence to MISRA-C guidelines for safety-critical automotive and aerospace deployments.
+\end{enumerate}
+
+% =========================================================================
+% SECTION 15: CONCLUSION
+% =========================================================================
+\section{Conclusion}
+\label{sec:conclusion}
+
+This monograph presented the architectural design, formal foundations, and physical silicon verification of \textbf{TMLC} (TinyML Model-to-C Compiler). 
+
+By departing from the prevailing paradigm of heavy embedded runtime interpreters, TMLC demonstrates that deep learning deployment on microcontrollers can achieve both mathematical rigor and extreme resource efficiency:
+\begin{enumerate}
+    \item \textbf{Formal Grammatical Determinism:} Governed by an SLR(1) context-free grammar with 37 states and provably 0 shift/reduce and 0 reduce/reduce conflicts, guaranteeing deterministic parsing and clear error diagnostics (E001--E101).
+    \item \textbf{Semantic and Numerical Integrity:} Multi-pass semantic checks enforce dimensional continuity, tensor shape compatibility, and complete IEEE 754 float sanitation against NaN and infinity hazards (E201--E304).
+    \item \textbf{Algebraic Operator Fusion:} Linear IR optimization fuses Dense affine transformations and non-linear ReLU activations into compound register-level kernels, eliminating intermediate memory round-trips to SRAM.
+    \item \textbf{Static Ping-Pong Buffer Planning:} A two-buffer static memory allocator eliminates all dynamic memory allocation (\texttt{malloc}), restricting peak working SRAM for a 109,386-parameter MNIST model to just \textbf{768 Bytes} (0.75~KB).
+    \item \textbf{High-Precision C99 Code Generation:} Formatting weights via \texttt{\%.9g} guarantees exact IEEE 754 single-precision round-tripping, while a numerically stable Softmax formulation eliminates float32 exponent overflow.
+    \item \textbf{Sub-Millisecond Execution and Numerical Rigor:} Under GCC \texttt{-O2} optimization, the compiled model achieves an inference latency of \textbf{195.65 $\mu$s} ($>5,111$ inferences per second) with an empirical numerical discrepancy against decoupled NumPy references of just $7.92 \times 10^{-9}$.
+    \item \textbf{Comprehensive Quality Assurance:} A 40-test green test suite verified via end-to-end subprocess CLI testing and fault-injection mutation analysis establishes complete confidence in compiler correctness.
+\end{enumerate}
+
+TMLC demonstrates that modern deep learning inference can run reliably, deterministically, and with mathematically bounded memory on the smallest microcontrollers.
+
+% =========================================================================
+% REFERENCES
+% =========================================================================
+\begin{thebibliography}{99}
+\bibitem{david2021tensorflow}
+R.~David, P.~Duke, A.~Jain, V.~J. Reddi, N.~Jeffries, J.~Li, N.~Linden, S.~Majumdar, M.~Mattina, D.~Situnayake \emph{et~al.}, ``TensorFlow Lite Micro: Embedded machine learning on TinyML systems,'' \emph{Proceedings of Machine Learning and Systems (MLSys)}, vol.~3, pp. 800--811, 2021.
+
+\bibitem{warden2019tinyml}
+P.~Warden and D.~Situnayake, \emph{TinyML: Machine Learning with TensorFlow Lite on Arduino and Ultra-Low-Power Microcontrollers}.\hskip 1em plus 0.5em minus 0.4em\relax O'Reilly Media, 2019.
+
+\bibitem{chen2018tvm}
+T.~Chen, T.~Moreau, Z.~Jiang, L.~Zheng, E.~Yan, H.~Shen, M.~Cowan, L.~Wang, Y.~Hu, L.~Ceze \emph{et~al.}, ``TVM: An automated end-to-end optimizing compiler for deep learning,'' in \emph{13th USENIX Symposium on Operating Systems Design and Implementation (OSDI)}, 2018, pp. 578--594.
+
+\bibitem{lai2018cmsis}
+L.~Lai, N.~Suda, and V.~Chandra, ``CMSIS-NN: Efficient neural network kernels for Arm Cortex-M CPUs,'' \emph{arXiv preprint arXiv:1801.06601}, 2018.
+
+\bibitem{deremer1971simple}
+F.~L. DeRemer, ``Simple LR(k) and LALR(k) grammars,'' \emph{Communications of the ACM}, vol.~14, no.~7, pp. 453--460, 1971.
+
+\bibitem{dragonbook}
+A.~V. Aho, M.~S. Lam, R.~Sethi, and J.~D. Ullman, \emph{Compilers: Principles, Techniques, and Tools}, 2nd~ed.\hskip 1em plus 0.5em minus 0.4em\relax Addison-Wesley, 2006.
+
+\bibitem{goldberg1991what}
+D.~Goldberg, ``What every computer scientist should know about floating-point arithmetic,'' \emph{ACM Computing Surveys (CSUR)}, vol.~23, no.~1, pp. 5--48, 1991.
+
+\bibitem{higham2002accuracy}
+N.~J. Higham, \emph{Accuracy and Stability of Numerical Algorithms}, 2nd~ed.\hskip 1em plus 0.5em minus 0.4em\relax SIAM, 2002.
+
+\bibitem{lecun1998gradient}
+Y.~LeCun, L.~Bottou, Y.~Bengio, and P.~Haffner, ``Gradient-based learning applied to document recognition,'' \emph{Proceedings of the IEEE}, vol.~86, no.~11, pp. 2278--2324, 1998.
+
+\bibitem{kingma2014adam}
+D.~P. Kingma and J.~Ba, ``Adam: A method for stochastic optimization,'' in \emph{International Conference on Learning Representations (ICLR)}, 2015.
+\end{thebibliography}
+
+% =========================================================================
+% APPENDICES (EXACTLY 2 PAGES)
+% =========================================================================
+\newpage
+\appendix
+
+% -------------------------------------------------------------------------
+% APPENDIX PAGE 1: GRAMMAR, SLR(1) AUTOMATON, AND MODEL DSL
+% -------------------------------------------------------------------------
+\section{Appendix A: Formal Grammar, SLR(1) Automaton, and Model DSL}
+\label{app:grammar}
+\label{app:slr_table}
+\label{app:model_source}
+
+\noindent
+\begin{minipage}[t]{0.56\linewidth}
+\footnotesize
+\textbf{Context-Free Grammar Productions ($G$):}
+\begin{align*}
+0: \quad &\text{Start}           &&\rightarrow \text{Model} \\
+1: \quad &\text{Model}           &&\rightarrow \texttt{MODEL} \ \texttt{IDENT} \ \texttt{\{} \ \text{ModelBody} \ \texttt{\}} \\
+2: \quad &\text{ModelBody}       &&\rightarrow \text{InputDecl} \ \text{OutputDecl} \ \text{LayerList} \\
+3: \quad &\text{InputDecl}       &&\rightarrow \texttt{INPUT} \ \texttt{:} \ \texttt{INT} \ \texttt{;} \\
+4: \quad &\text{OutputDecl}      &&\rightarrow \texttt{OUTPUT} \ \texttt{:} \ \texttt{INT} \ \texttt{;} \\
+5: \quad &\text{LayerList}       &&\rightarrow \text{LayerList} \ \text{Layer} \ \mid \ \text{Layer} \\
+6: \quad &\text{Layer}           &&\rightarrow \text{DenseLayer} \ \mid \ \text{ActivationLayer} \\
+7: \quad &\text{DenseLayer}      &&\rightarrow \texttt{DENSE} \ \texttt{(} \ \texttt{INT} \ \texttt{,} \ \texttt{INT} \ \texttt{,} \ \texttt{STR} \ \texttt{,} \ \texttt{STR} \ \texttt{)} \ \texttt{;} \\
+8: \quad &\text{ActivationLayer} &&\rightarrow \texttt{RELU} \ \texttt{;} \ \mid \ \texttt{SOFTMAX} \ \texttt{;}
+\end{align*}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.42\linewidth}
+\footnotesize
+\textbf{Lexical Terminals (Regex Patterns):}
+\begin{align*}
+\texttt{MODEL}     &\leftarrow \text{"model"} \\
+\texttt{INPUT}     &\leftarrow \text{"input"} \\
+\texttt{OUTPUT}    &\leftarrow \text{"output"} \\
+\texttt{DENSE}     &\leftarrow \text{"Dense"} \\
+\texttt{RELU}      &\leftarrow \text{"ReLU"} \\
+\texttt{SOFTMAX}   &\leftarrow \text{"Softmax"} \\
+\texttt{IDENT}     &\leftarrow \texttt{[A-Za-z\_][A-Za-z0-9\_]*} \\
+\texttt{INT}       &\leftarrow \texttt{[0-9]+} \\
+\texttt{STR}       &\leftarrow \texttt{"([\textasciicircum"\textbackslash n]*)"}
+\end{align*}
+\end{minipage}
+
+\vspace{-0.5em}
+\subsection{Representative SLR(1) Automaton States and Transitions}
+\vspace{-0.3em}
+\begin{table}[htbp]
+\centering
+\scriptsize
+\caption{Representative SLR(1) States (41 States Total, 0 Conflicts)}
+\label{tab:slr_table_excerpt}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{c >{\raggedright\arraybackslash}p{5.4cm} >{\raggedright\arraybackslash}p{6.4cm} >{\raggedright\arraybackslash}p{2.6cm}}
+\toprule
+\textbf{State} & \textbf{Kernel Items} & \textbf{ACTION Table} & \textbf{GOTO Table} \\
+\midrule
+0  & $\text{Start} \rightarrow \cdot \text{Model}$ & on \texttt{MODEL} $\rightarrow$ Shift 1 & on \text{Model} $\rightarrow$ 2 \\
+2  & $\text{Start} \rightarrow \text{Model} \cdot$ & on \texttt{EOF} $\rightarrow$ \textbf{ACCEPT} & --- \\
+4  & $\text{Model} \rightarrow \dots \texttt{\{} \cdot \text{ModelBody} \dots$ & on \texttt{INPUT} $\rightarrow$ Shift 5 & on \text{ModelBody} $\rightarrow$ 7 \\
+11 & $\text{Model} \rightarrow \dots \texttt{\}} \cdot$ & on \texttt{EOF} $\rightarrow$ \textbf{Reduce 1} & --- \\
+14 & $\text{Layer} \rightarrow \text{ActivationLayer} \cdot$ & on \texttt{DENSE}, \texttt{RELU}, \texttt{SOFTMAX}, \texttt{\}} $\rightarrow$ \textbf{Reduce 8} & --- \\
+16 & $\text{Layer} \rightarrow \text{DenseLayer} \cdot$ & on \texttt{DENSE}, \texttt{RELU}, \texttt{SOFTMAX}, \texttt{\}} $\rightarrow$ \textbf{Reduce 7} & --- \\
+18 & $\text{ModelBody} \rightarrow \dots \text{LayerList} \cdot$ & on \texttt{\}} $\rightarrow$ \textbf{Reduce 2}, on \texttt{DENSE} $\rightarrow$ Shift 15 & on \text{Layer} $\rightarrow$ 24 \\
+24 & $\text{LayerList} \rightarrow \text{LayerList} \ \text{Layer} \cdot$ & on \texttt{DENSE}, \texttt{RELU}, \texttt{SOFTMAX}, \texttt{\}} $\rightarrow$ \textbf{Reduce 5} & --- \\
+36 & $\text{DenseLayer} \rightarrow \dots \texttt{;} \cdot$ & on \texttt{DENSE}, \texttt{RELU}, \texttt{SOFTMAX}, \texttt{\}} $\rightarrow$ \textbf{Reduce 9} & --- \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\vspace{-1.0em}
+\subsection{MNIST Deep Neural Network Model DSL (\texttt{examples/mnist.tml})}
+\vspace{-0.3em}
+\begin{lstlisting}[language=C, basicstyle=\ttfamily\scriptsize, frame=single]
+model MNIST {
+    input: 784;  output: 10;
+    Dense(784, 128, "weights/dense1_w.npy", "weights/dense1_b.npy");
+    ReLU;
+    Dense(128, 64, "weights/dense2_w.npy", "weights/dense2_b.npy");
+    ReLU;
+    Dense(64, 10, "weights/dense3_w.npy", "weights/dense3_b.npy");
+    Softmax;
+}
+\end{lstlisting}
+
+% -------------------------------------------------------------------------
+% APPENDIX PAGE 2: GENERATED C99 IMPLEMENTATION & DIAGNOSTIC CATALOG
+% -------------------------------------------------------------------------
+\newpage
+\section{Appendix B: Generated C99 Kernel and Diagnostic Catalog}
+\label{app:c_codegen}
+\label{app:error_catalog}
+
+\subsection{Generated Standalone C99 Implementation (\texttt{model.h} and \texttt{model.c})}
+\vspace{-0.3em}
+\begin{lstlisting}[language=C, basicstyle=\ttfamily\tiny, frame=single]
+/* model.h: Public Microcontroller Interface */
+#define MODEL_INPUT_DIM 784
+#define MODEL_OUTPUT_DIM 10
+void model_predict(const float input[784], float output[10]);
+
+/* model.c: Generated Implementation (Zero Malloc, Static Flash & RAM) */
+#include "model.h"
+#include <math.h>
+/* Flash Weights (.rodata): static const float layer1_weights[100352], layer1_bias[128], ... */
+static float buf_a[128]; /* SRAM Primary Working Buffer: 512 B */
+static float buf_b[64];  /* SRAM Secondary Working Buffer: 256 B */
+
+void model_predict(const float in[784], float out[10]) {
+    // Fused Layer 1: Dense+ReLU(784 -> 128) [in -> buf_a]
+    for (int i = 0; i < 128; i++) {
+        float sum = layer1_bias[i];
+        for (int j = 0; j < 784; j++) sum += in[j] * layer1_weights[j * 128 + i];
+        buf_a[i] = (sum > 0.0f) ? sum : 0.0f;
+    }
+    // Fused Layer 2: Dense+ReLU(128 -> 64) [buf_a -> buf_b]
+    // Layer 3: Dense(64 -> 10) [buf_b -> buf_a]
+    // Numerically Stable Softmax: in-place on buf_a and copy to out[10]
+}
+\end{lstlisting}
+
+\vspace{-0.6em}
+\subsection{Complete TMLC Diagnostic Error and Warning Master Reference}
+\vspace{-0.3em}
+\begin{center}
+\captionof{table}{Complete TMLC Diagnostic Error and Warning Reference}
+\label{tab:complete_error_catalog}
+\resizebox{\linewidth}{!}{%
+\renewcommand{\arraystretch}{0.82}%
+\begin{tabular}{ll >{\raggedright\arraybackslash}p{6.8cm} >{\raggedright\arraybackslash\ttfamily\scriptsize}p{6.0cm}}
+\toprule
+\textbf{Code} & \textbf{Stage} & \textbf{Trigger Condition} & \textbf{Diagnostic Message Example} \\
+\midrule
+\texttt{E001} & Lexer    & Invalid/unrecognized character in input stream. & Error [E001] at 3:12: Invalid character '@' \\
+\texttt{E002} & Lexer    & String literal missing closing quote before newline/EOF. & Error [E002] at 5:25: Unterminated string literal \\
+\texttt{E101} & Parser   & Lookahead token disallowed by current SLR(1) state. & Error [E101] at 4:5: Unexpected token 'ReLU' \\
+\texttt{E201} & Semantic & Adjacent layer dimensions mismatch ($D_{\text{out}}^{(l-1)} \neq D_{\text{in}}^{(l)}$). & Error [E201] at 7:5: Layer dimension mismatch \\
+\texttt{E202} & Semantic & Non-positive dimension ($\le 0$) in input, output, or Dense. & Error [E202] at 5:5: Non-positive dimension encountered \\
+\texttt{E203} & Semantic & Final Dense output differs from top-level \texttt{output:} decl. & Error [E203] at 9:5: Final Dense output does not match \\
+\texttt{E204} & Semantic & Model specification contains zero \texttt{Dense} layers. & Error [E204] at 4:1: Model contains no Dense layers \\
+\texttt{E301} & Loader   & Missing or empty weight/bias file path. & Error [E301] at 5:5: Weight file does not exist \\
+\texttt{E302} & Loader   & Weight array shape does not match $(D_{\text{in}}, D_{\text{out}})$. & Error [E302] at 5:5: Weight shape mismatch \\
+\texttt{E303} & Loader   & Bias vector shape does not match $(D_{\text{out}},)$. & Error [E303] at 5:5: Bias shape mismatch \\
+\texttt{E304} & Loader   & NaN, $+\infty$, or $-\infty$ detected in parameter array. & Error [E304] at 5:5: NaN or Infinity detected in array \\
+\texttt{E401} & Optimizer& Internal intermediate representation inconsistency. & Error [E401]: IR optimizer failure: invalid opcode \\
+\texttt{E501} & Backend  & Unsupported backend instruction or unhandled node type. & Error [E501]: C99 backend error: unhandled IR instruction \\
+\texttt{E601} & Verifier & C99 output deviates from NumPy reference ($\Delta > \text{tol}$). & Error [E601]: Verification failed: error > 1e-05 \\
+\texttt{E602} & Verifier & Host GCC compiler not found or compilation failed. & Error [E602]: GCC compiler not found or compilation failed \\
+\texttt{W101} & Grammar  & Parsing table contains shift/reduce or reduce/reduce conflict. & Warning [W101]: SLR(1) parsing table contains conflicts \\
+\bottomrule
+\end{tabular}%
+}
+\end{center}
+
+
+\newpage
+\section{Appendix C: Safety-Critical Embedded Compliance: MISRA-C:2012 Audit}
+\label{app:misra_audit}
+
+For mission-critical deployments in automotive (ISO 26262), aerospace (DO-178C), and medical device firmware (IEC 62304), embedded C code must adhere to strict defensive programming guidelines such as MISRA-C:2012. TMLC's code generator was designed specifically to comply with core MISRA-C rules:
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{MISRA-C:2012 Defensive Programming Compliance Matrix for Generated C99 Code}
+\label{tab:misra_compliance}
+\begin{tabular}{llcp{6.5cm}}
+\toprule
+\textbf{MISRA Rule} & \textbf{Classification} & \textbf{Status} & \textbf{TMLC Architectural Guarantee} \\
+\midrule
+\textbf{Dir 4.12}   & Required & \textbf{COMPLIANT} & Dynamic memory allocation shall not be used. TMLC generates 100\% static Flash and BSS buffers; zero calls to \texttt{malloc/free}. \\
+\textbf{Rule 8.4}   & Required & \textbf{COMPLIANT} & Compatible declaration shall be visible. Generated \texttt{model.h} declares all public function prototypes linked by \texttt{model.c}. \\
+\textbf{Rule 8.7}   & Advisory & \textbf{COMPLIANT} & Objects shall be defined with internal linkage. All weight matrices, bias arrays, and working ping-pong buffers are declared \texttt{static}. \\
+\textbf{Rule 8.9}   & Advisory & \textbf{COMPLIANT} & Static objects shall be defined at block scope where possible. Working buffers are isolated strictly within \texttt{model.c}. \\
+\textbf{Rule 11.4}  & Advisory & \textbf{COMPLIANT} & A conversion should not be performed between a pointer to object and an integer type. Zero pointer-to-integer casts. \\
+\textbf{Rule 12.1}  & Advisory & \textbf{COMPLIANT} & Precedence of operators shall be made explicit. All inner-loop arithmetic expressions utilize explicit parentheses. \\
+\textbf{Rule 14.4}  & Required & \textbf{COMPLIANT} & The condition of an if-statement shall have essentially Boolean type. ReLU ternary expressions strictly evaluate \texttt{(acc > 0.0f)}. \\
+\textbf{Rule 17.2}  & Required & \textbf{COMPLIANT} & Functions shall not call themselves, either directly or indirectly. Forward inference execution is strictly linear and non-recursive. \\
+\textbf{Rule 21.1}  & Required & \textbf{COMPLIANT} & Reserved identifiers shall not be defined. All generated macro identifiers carry the explicit prefix \texttt{MODEL\_}. \\
+\textbf{Rule 21.3}  & Required & \textbf{COMPLIANT} & Memory allocation and deallocation functions of \texttt{<stdlib.h>} shall not be used. Verified via automated regex assertion. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Appendix D: Annotated Core Compiler Implementation Listings}
+\label{app:code_listings}
+
+To facilitate academic review and reproducible compiler engineering, Listings~\ref{lst:fuse_py} and~\ref{lst:buffers_py} reproduce the core algorithmic implementations of TMLC's optimization passes.
+
+\begin{lstlisting}[language=Python, caption={Linear IR Dense+ReLU Operator Fusion Pass (\texttt{tmlc/optimizer/fuse.py})}, label={lst:fuse_py}, basicstyle=\fontsize{7pt}{8pt}\ttfamily, frame=single, numbers=left]
+def fuse_dense_relu(program: IRProgram) -> IRProgram:
+    """Algebraic rewrite pass collapsing adjacent Dense + ReLU into compound DenseReLU."""
+    fused_ops: list[IROp] = []
+    i = 0
+    ops = program.ops
+    n = len(ops)
+
+    while i < n:
+        curr_op = ops[i]
+        if curr_op.opcode == "DENSE" and (i + 1 < n) and ops[i + 1].opcode == "RELU":
+            fused = IROp(
+                opcode="DENSE_RELU",
+                in_dim=curr_op.in_dim,
+                out_dim=curr_op.out_dim,
+                weights=curr_op.weights,
+                bias=curr_op.bias,
+                src_buffer=curr_op.src_buffer,
+                dst_buffer=curr_op.dst_buffer,
+                weight_path=curr_op.weight_path,
+                bias_path=curr_op.bias_path,
+                quantized_weights=curr_op.quantized_weights,
+                scale=curr_op.scale,
+            )
+            fused_ops.append(fused)
+            i += 2  # Skip fused ReLU instruction
+        else:
+            fused_ops.append(curr_op)
+            i += 1
+
+    return IRProgram(ops=fused_ops)
+\end{lstlisting}
+
+\begin{lstlisting}[language=Python, caption={Bipartite Ping-Pong Memory Planning Algorithm (\texttt{tmlc/optimizer/buffers.py})}, label={lst:buffers_py}, basicstyle=\fontsize{7pt}{8pt}\ttfamily, frame=single, numbers=left]
+def allocate_buffers(program: IRProgram) -> tuple[IRProgram, MemoryReport]:
+    """Schedules intermediate tensors across two static ping-pong buffers."""
+    allocated_ops: list[IROp] = []
+    active_in = "input"
+    active_out = "buf_a"
+    max_buf_a = 0
+    max_buf_b = 0
+
+    for op in program.ops:
+        if op.opcode == "INPUT":
+            allocated_ops.append(op)
+            continue
+
+        if op.opcode == "OUTPUT":
+            allocated_ops.append(op)
+            continue
+
+        if op.opcode == "SOFTMAX":
+            # Softmax operates in-place on current working buffer
+            op.src_buffer = active_in
+            op.dst_buffer = active_in
+            allocated_ops.append(op)
+            continue
+
+        # Affine layers alternate between buf_a and buf_b
+        op.src_buffer = active_in
+        op.dst_buffer = active_out
+        allocated_ops.append(op)
+
+        if active_out == "buf_a":
+            max_buf_a = max(max_buf_a, op.out_dim)
+            active_in = "buf_a"
+            active_out = "buf_b"
+        else:
+            max_buf_b = max(max_buf_b, op.out_dim)
+            active_in = "buf_b"
+            active_out = "buf_a"
+
+    report = MemoryReport(
+        buf_a_elements=max_buf_a,
+        buf_a_bytes=max_buf_a * 4,
+        buf_b_elements=max_buf_b,
+        buf_b_bytes=max_buf_b * 4,
+        total_ram_bytes=(max_buf_a + max_buf_b) * 4,
+    )
+    return IRProgram(ops=allocated_ops), report
+\end{lstlisting}
+
+\end{document}
+
